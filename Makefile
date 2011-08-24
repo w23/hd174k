@@ -1,8 +1,14 @@
 PROD=tgl
 
+# можно рассчитать
+ELF_HEADER_SIZE=346
+
 release: $(PROD)
 
 compress: $(PROD).gz
+
+show: $(PROD).elf
+	udcli -s $(ELF_HEADER_SIZE) $(PROD).elf | less
 
 compile: $(PROD).elf
 

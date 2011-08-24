@@ -137,12 +137,20 @@ _start:
 	
 	mov	ebp, bss_begin	; 5 байт и жмется лучше
 
+;	mov ebp, edi ;	add ebp, (bss_begin - _start) ; 8 байт! пиздец!
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dynamic linking {
 
-	lea edi, [BSSADDR(libs_syms)]			; edi <- места для адресов функций
-	lea esi, [BSSADDR(libs_to_dl+1)]	; esi <- строки с именами библиотек и функций
+;	lea edi, [BSSADDR(libs_syms)]			; edi <- места для адресов функций							3 байт
+;	lea esi, [BSSADDR(libs_to_dl+1)]	; esi <- строки с именами библиотек и функций, 	6 байт
+	
+;	mov	esi, libs_to_dl+1											; 5b
+;	lea edi, [esi+(libs_syms-libs_to_dl)-1]		;	6b
+
+	mov esi, libs_to_dl+1						; 5b
+	lea edi, [BSSADDR(libs_syms)]		; 3b
 
 ;	TODO: push/call участки можно как-нибудь объединить наверняка,
 ; 	тем самым удавив это все еще байт на 10
@@ -202,9 +210,11 @@ ld_second_zero:
 	; shaders
 	; use stack as temp space!
 	mov edi, esp
-	lea eax, [BSSADDR(shader_vtx)]
+	mov	eax, shader_vtx							; 5b
+;	lea eax, [BSSADDR(shader_vtx)]			;	6b
 	stosd
-	lea	eax, [BSSADDR(shader_frg)]
+	mov eax, shader_frg							; 5b
+;	lea	eax, [BSSADDR(shader_frg)]			; 6b
 	stosd
 	sub edi, 8
 	push 0x8B31; GL_VERTEX_SHADER
@@ -213,9 +223,7 @@ ld_second_zero:
 	push edi
 	push 1
 	push eax
-	int 3
 	call F(glShaderSource)
-	int 3
 	call F(glCompileShader)
 
 	call F(glCreateProgram)
@@ -224,7 +232,6 @@ ld_second_zero:
 	pop ebx
 
 	add edi, 4
-	int 3
 	push 0x8B30; GL_FRAGMENT_SHADER
 	call F(glCreateShader)
 	push 0
@@ -237,8 +244,6 @@ ld_second_zero:
 	call F(glAttachShader)
 	call F(glLinkProgram)
 	call F(glUseProgram)
-
-	int 3
 
 	; stack here: prog, frg, ?, ?, ?, vtx
 
@@ -253,7 +258,7 @@ mainloop:
 	; в) можно сделать cmp сразу по адресу, что охуенчик!
 	lea edx, [BSSADDR(SDL_Event)]
 	push edx
-	call [BSSADDR(SDL_PollEvent)]
+	call F(SDL_PollEvent)
 	pop edx
 	cmp byte [edx], 2
 	jz exit
@@ -261,6 +266,27 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
+	push 7	; GL_QUADS
+	call F(glBegin)
+	xor eax, eax
+	mov ebx, 0xbf800000
+	mov ecx, 0x3f800000
+	push ebx
+	push ecx
+	push ecx
+	push ebx
+	push ebx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	pop edx
+	pop edx
+	pop edx
+	call F(glEnd)
 
 ;; END OF THE LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -286,7 +312,7 @@ shader_vtx:
 db 'void main(){gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
-db 'void main(){gl_FragColor=vec4(.5,.3,.1,.0);}'
+db 'void main(){gl_FragColor=vec4(.8,.9,.1,.0);}'
 db 0
 
 
@@ -313,6 +339,9 @@ db  'glCreateProgram', 0
 db  'glAttachShader', 0
 db  'glLinkProgram', 0
 db  'glUseProgram', 0
+db	'glBegin', 0
+db	'glVertex2f', 0
+db	'glEnd', 0
 db	0, 0
 
 file_size equ	($-$$)
@@ -339,6 +368,9 @@ glCreateProgram: resd 1
 glAttachShader: resd 1
 glLinkProgram: resd 1
 glUseProgram: resd 1
+glBegin: resd 1
+glVertex2f: resd 1
+glEnd: resd 1
 
 SDL_Event: resb 24
 
