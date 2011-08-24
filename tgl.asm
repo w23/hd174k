@@ -3,6 +3,7 @@
 ;; Macro for accessing addresses in .bss and some of .text via ebp.
 
 %define BSSADDR(a) ebp + ((a) - bss_begin)
+%define F(f)	[ebp + ((f) - bss_begin)]
 %define WIDTH		800
 %define HEIGHT	600
 
@@ -140,11 +141,8 @@ _start:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dynamic linking {
 
-	lea edi, [BSSADDR(libs_syms)]
-	lea esi, [BSSADDR(libs_to_dl+1)]
-
-;	add	di, (libs_syms - _start)					; edi <- места для адресов функций
-;	lea	esi, [edi+1+libs_to_dl-libs_syms]		; esi <- строки с именами библиотек и функций
+	lea edi, [BSSADDR(libs_syms)]			; edi <- места для адресов функций
+	lea esi, [BSSADDR(libs_to_dl+1)]	; esi <- строки с именами библиотек и функций
 
 ;	TODO: push/call участки можно как-нибудь объединить наверняка,
 ; 	тем самым удавив это все еще байт на 10
@@ -201,9 +199,48 @@ ld_second_zero:
 	push 0
 	call [BSSADDR(glViewport)]
 
-	; ??
-	push dword 0xffffffff
-	call [BSSADDR(glClearColor)]
+	; shaders
+	; use stack as temp space!
+	mov edi, esp
+	lea eax, [BSSADDR(shader_vtx)]
+	stosd
+	lea	eax, [BSSADDR(shader_frg)]
+	stosd
+	sub edi, 8
+	push 0x8B31; GL_VERTEX_SHADER
+	call F(glCreateShader)
+	push 0
+	push edi
+	push 1
+	push eax
+	int 3
+	call F(glShaderSource)
+	int 3
+	call F(glCompileShader)
+
+	call F(glCreateProgram)
+	push eax
+	call F(glAttachShader)
+	pop ebx
+
+	add edi, 4
+	int 3
+	push 0x8B30; GL_FRAGMENT_SHADER
+	call F(glCreateShader)
+	push 0
+	push edi
+	push 1
+	push eax
+	call F(glShaderSource)
+	call F(glCompileShader)
+	push ebx
+	call F(glAttachShader)
+	call F(glLinkProgram)
+	call F(glUseProgram)
+
+	int 3
+
+	; stack here: prog, frg, ?, ?, ?, vtx
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
@@ -224,9 +261,6 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
-	push dword 0x00004000
-	call [BSSADDR(glClear)]
-	pop eax
 
 ;; END OF THE LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,7 +282,18 @@ exit:
 ; data
 ;;;;;
 
+shader_vtx:
+db 'void main(){gl_Position=gl_Vertex;}'
+db 0
+shader_frg:
+db 'void main(){gl_FragColor=vec4(.5,.3,.1,.0);}'
+db 0
+
+
 ; END of known
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; more technical bootstrapping stuff
 
 ; libraries to load
 libs_to_dl:
@@ -261,8 +306,13 @@ db	'SDL_Quit', 0
 db	0
 db	'libGL.so', 0
 db	'glViewport', 0
-db	'glClearColor', 0
-db	'glClear', 0
+db	'glCreateShader', 0
+db  'glShaderSource', 0
+db  'glCompileShader', 0
+db  'glCreateProgram', 0
+db  'glAttachShader', 0
+db  'glLinkProgram', 0
+db  'glUseProgram', 0
 db	0, 0
 
 file_size equ	($-$$)
@@ -282,8 +332,13 @@ SDL_PollEvent: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
 glViewport: resd 1
-glClearColor: resd 1
-glClear: resd 1
+glCreateShader: resd 1
+glShaderSource: resd 1
+glCompileShader: resd 1
+glCreateProgram: resd 1
+glAttachShader: resd 1
+glLinkProgram: resd 1
+glUseProgram: resd 1
 
 SDL_Event: resb 24
 
