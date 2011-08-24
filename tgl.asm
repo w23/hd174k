@@ -309,10 +309,12 @@ exit:
 ;;;;;
 
 shader_vtx:
-db 'void main(){gl_Position=gl_Vertex;}'
+db 'varying vec4 p;'
+db 'void main(){p=gl_Vertex;gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
-db 'void main(){gl_FragColor=vec4(.8,.9,.1,.0);}'
+db 'varying vec4 p;'
+db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*100.)));}'
 db 0
 
 
