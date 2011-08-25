@@ -247,6 +247,14 @@ ld_second_zero:
 
 	; stack here: prog, frg, ?, ?, ?, vtx
 
+	pop eax
+	push var_t
+	push eax
+	call F(glGetUniformLocation)
+	push eax
+
+	; stack here: t_loc, prog, ?, frg, ?, ?, ?, vtx
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
 
@@ -262,6 +270,33 @@ mainloop:
 	pop edx
 	cmp byte [edx], 2
 	jz exit
+
+;;;;;;;;;;;
+; time management
+;	mov eax, 265 	; clock_gettime syscall
+;	xor ebx, ebx	; CLOCK_MONOTONIC
+;	lea ecx, [BSSADDR(tp_sec)]
+;	int 0x80
+;	mov eax, [BSSADDR(tp_nano)]
+;	xor edx, edx
+;	mov ebx, 1000000
+;	div ebx
+;	xchg eax, ecx
+;	mov ebx, 1000
+;	mul ebx
+;	add eax, ecx
+
+	call F(SDL_GetTicks)
+	; eax = time
+
+	pop ebx
+	push ebx
+	push eax
+	push ebx
+	call F(glUniform1i)
+;-- pop, pop
+
+;int 3
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
@@ -283,9 +318,7 @@ mainloop:
 	call F(glVertex2f)
 	pop edx
 	call F(glVertex2f)
-	pop edx
-	pop edx
-	pop edx
+	add esp, (3+2)*4
 	call F(glEnd)
 
 ;; END OF THE LOOP
@@ -313,9 +346,11 @@ db 'varying vec4 p;'
 db 'void main(){p=gl_Vertex;gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
-db 'varying vec4 p;'
-db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*100.)));}'
+db 'uniform int t;varying vec4 p;'
+db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*(sin(float(t)/100.)+2.)*100.)*sin(10./length(p))));}'
 db 0
+var_t:
+db 't', 0
 
 
 ; END of known
@@ -329,6 +364,7 @@ db	'libSDL.so', 0
 db	'SDL_Init', 0
 db	'SDL_SetVideoMode', 0
 db	'SDL_PollEvent', 0
+db	'SDL_GetTicks', 0
 db	'SDL_GL_SwapBuffers', 0
 db	'SDL_Quit', 0
 db	0
@@ -341,6 +377,8 @@ db  'glCreateProgram', 0
 db  'glAttachShader', 0
 db  'glLinkProgram', 0
 db  'glUseProgram', 0
+db	'glGetUniformLocation', 0
+db	'glUniform1i', 0
 db	'glBegin', 0
 db	'glVertex2f', 0
 db	'glEnd', 0
@@ -360,6 +398,7 @@ libs_syms:
 SDL_Init: resd 1
 SDL_SetVideoMode: resd 1
 SDL_PollEvent: resd 1
+SDL_GetTicks: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
 glViewport: resd 1
@@ -370,9 +409,14 @@ glCreateProgram: resd 1
 glAttachShader: resd 1
 glLinkProgram: resd 1
 glUseProgram: resd 1
+glGetUniformLocation: resd 1
+glUniform1i: resd 1
 glBegin: resd 1
 glVertex2f: resd 1
 glEnd: resd 1
+
+;tp_sec: resd 1
+;tp_nano: resd 1
 
 SDL_Event: resb 24
 
