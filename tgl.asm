@@ -189,6 +189,8 @@ ld_second_zero:
   test al, al
 	jnz	ld_load
 
+	; первые 8 байт после .bss (ebp) нам больше не нужны!
+
 ;; } dynamic linking
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,52 +215,80 @@ ld_second_zero:
 	call F(glInterleavedArrays)
 
 	; shaders
-	; use stack as temp space!
-	mov edi, esp
-	mov	eax, shader_vtx							; 5b
-;	lea eax, [BSSADDR(shader_vtx)]			;	6b
-	stosd
-	mov eax, shader_frg							; 5b
-;	lea	eax, [BSSADDR(shader_frg)]			; 6b
-	stosd
-	sub edi, 8
-	push 0x8B31; GL_VERTEX_SHADER
-	call F(glCreateShader)
-	push 0
-	push edi
-	push 1
-	push eax
-	call F(glShaderSource)
-	call F(glCompileShader)
-
+	
 	call F(glCreateProgram)
-	push eax
-	call F(glAttachShader)
-	pop ebx
+	mov edi, eax
+	mov esi, 0x8B31
+	mov dword [ebp], shader_vtx
+	call shader
+	dec esi
+	mov dword [ebp], shader_frg
+  call shader
+	jmp shaders_end
 
-	add edi, 4
-	push 0x8B30; GL_FRAGMENT_SHADER
-	call F(glCreateShader)
-	push 0
-	push edi
-	push 1
-	push eax
-	call F(glShaderSource)
-	call F(glCompileShader)
-	push ebx
-	call F(glAttachShader)
-	call F(glLinkProgram)
-	call F(glUseProgram)
+shader:
+		push	esi
+		call	F(glCreateShader)
+		push	0
+		push	ebp
+		push	1
+		push	eax
+		call	F(glShaderSource)
+		call	F(glCompileShader)
+		push	edi
+		call	F(glAttachShader)
+		call	F(glLinkProgram)
+		call	F(glUseProgram)
+		add		esp, 4*6
+		ret
+	
+shaders_end:
 
-	; stack here: prog, frg, ?, ?, ?, vtx
+;	mov edi, esp
+;	mov	eax, shader_vtx							; 5b
+;;	lea eax, [BSSADDR(shader_vtx)]			;	6b
+;	stosd
+;	mov eax, shader_frg							; 5b
+;;	lea	eax, [BSSADDR(shader_frg)]			; 6b
+;	stosd
+;	sub edi, 8
+;	push 0x8B31; GL_VERTEX_SHADER
+;	call F(glCreateShader)
+;	push 0
+;	push edi
+;	push 1
+;	push eax
+;	call F(glShaderSource)
+;	call F(glCompileShader)
+;
+;	call F(glCreateProgram)
+;	push eax
+;	call F(glAttachShader)
+;	pop ebx
+;
+;	add edi, 4
+;	push 0x8B30; GL_FRAGMENT_SHADER
+;	call F(glCreateShader)
+;	push 0
+;	push edi
+;	push 1
+;	push eax
+;	call F(glShaderSource)
+;	call F(glCompileShader)
+;	push ebx
+;	call F(glAttachShader)
+;	call F(glLinkProgram)
+;	call F(glUseProgram)
 
-	pop eax
+	; WRONG stack here: WRONG prog, frg, ?, ?, ?, vtx
+	; edi = program
+
 	push var_t
-	push eax
+	push edi
 	call F(glGetUniformLocation)
 	push eax
 
-	; stack here: t_loc, prog, ?, frg, ?, ?, ?, vtx
+	; stack here: t_loc, prog, ? WRONG: ?, frg, ?, ?, ?, vtx
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
@@ -276,21 +306,6 @@ mainloop:
 	cmp byte [edx], 2
 	jz exit
 
-;;;;;;;;;;;
-; time management
-;	mov eax, 265 	; clock_gettime syscall
-;	xor ebx, ebx	; CLOCK_MONOTONIC
-;	lea ecx, [BSSADDR(tp_sec)]
-;	int 0x80
-;	mov eax, [BSSADDR(tp_nano)]
-;	xor edx, edx
-;	mov ebx, 1000000
-;	div ebx
-;	xchg eax, ecx
-;	mov ebx, 1000
-;	mul ebx
-;	add eax, ecx
-
 	call F(SDL_GetTicks)
 	; eax = time
 
@@ -299,9 +314,6 @@ mainloop:
 	push eax
 	push ebx
 	call F(glUniform1i)
-;-- pop, pop
-
-;int 3
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
@@ -327,7 +339,7 @@ mainloop:
 ;	add esp, (3+2)*4
 ;	call F(glEnd)
 
-; whole mess 45 packed bytes, BUT LOTS MORE FLEXIBLE
+; whole mess 45 packed bytes
 	push 4
 	push 0
 	push 7
