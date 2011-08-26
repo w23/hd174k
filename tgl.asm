@@ -372,7 +372,7 @@ db 'void main(){p=gl_Vertex;gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
 db 'uniform int t;varying vec4 p;'
-db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*(sin(float(t)/100.)+2.)*100.)*sin(20./length(p))));}'
+db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*(sin(float(t)/200.)+4.)*100.)*sin(20./length(p))*sin(p.x*44.)*sin(p.y*34.)));}'
 db 0
 var_t:
 db 't', 0
