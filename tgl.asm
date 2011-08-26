@@ -207,6 +207,11 @@ ld_second_zero:
 	push 0
 	call [BSSADDR(glViewport)]
 
+	push vtx_bg_quad
+	push 0
+	push 0x2A20
+	call F(glInterleavedArrays)
+
 	; shaders
 	; use stack as temp space!
 	mov edi, esp
@@ -301,25 +306,33 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
-	push 7	; GL_QUADS
-	call F(glBegin)
-	xor eax, eax
-	mov ebx, 0xbf800000
-	mov ecx, 0x3f800000
-	push ebx
-	push ecx
-	push ecx
-	push ebx
-	push ebx
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	add esp, (3+2)*4
-	call F(glEnd)
+; begin-end whole mess: 39 packed bytes
+;	push 7	; GL_QUADS
+;	call F(glBegin)
+;	xor eax, eax
+;	mov ebx, 0xbf800000
+;	mov ecx, 0x3f800000
+;	push ebx
+;	push ecx
+;	push ecx
+;	push ebx
+;	push ebx
+;	call F(glVertex2f)
+;	pop edx
+;	call F(glVertex2f)
+;	pop edx
+;	call F(glVertex2f)
+;	pop edx
+;	call F(glVertex2f)
+;	add esp, (3+2)*4
+;	call F(glEnd)
+
+; whole mess 45 packed bytes, BUT LOTS MORE FLEXIBLE
+	push 4
+	push 0
+	push 7
+	call F(glDrawArrays)
+	add esp, 4*3
 
 ;; END OF THE LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -352,6 +365,11 @@ db 0
 var_t:
 db 't', 0
 
+vtx_bg_quad:
+dd 0xbf800000, 0xbf800000
+dd 0xbf800000, 0x3f800000
+dd 0x3f800000, 0x3f800000
+dd 0x3f800000, 0xbf800000
 
 ; END of known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,9 +397,11 @@ db  'glLinkProgram', 0
 db  'glUseProgram', 0
 db	'glGetUniformLocation', 0
 db	'glUniform1i', 0
-db	'glBegin', 0
-db	'glVertex2f', 0
-db	'glEnd', 0
+db	'glInterleavedArrays', 0
+db	'glDrawArrays', 0
+;db	'glBegin', 0
+;db	'glVertex2f', 0
+;db	'glEnd', 0
 db	0, 0
 
 file_size equ	($-$$)
@@ -411,9 +431,11 @@ glLinkProgram: resd 1
 glUseProgram: resd 1
 glGetUniformLocation: resd 1
 glUniform1i: resd 1
-glBegin: resd 1
-glVertex2f: resd 1
-glEnd: resd 1
+glInterleavedArrays: resd 1
+glDrawArrays: resd 1
+;glBegin: resd 1
+;glVertex2f: resd 1
+;glEnd: resd 1
 
 ;tp_sec: resd 1
 ;tp_nano: resd 1
