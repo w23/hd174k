@@ -7,7 +7,7 @@
 %define WIDTH		800
 %define HEIGHT	600
 
-org     0x00040000
+org     0x00004000
 
 ; x86, not x86-64
 BITS 32
