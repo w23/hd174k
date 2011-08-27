@@ -352,6 +352,16 @@ mainloop:
 	call [BSSADDR(SDL_GL_SwapBuffers)]
 	jmp mainloop
 
+;;;;;;;;;;;
+;; UADIO
+
+synth:
+	pop edi	; ignore
+	pop edi		; where to
+	pop ecx		; how much
+	nop ; lol
+	ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; RUN AWAY TO THE HELICOPTER
 
@@ -372,7 +382,10 @@ db 'void main(){p=gl_Vertex;gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
 db 'uniform int t;varying vec4 p;'
-db 'void main(){gl_FragColor=vec4(abs(sin(p.x*p.y*(sin(float(t)/200.)+4.)*100.)*sin(20./length(p))*sin(p.x*44.)*sin(p.y*34.)));}'
+db 'void main(){'
+db 'float c = sin(p.x*p.y*(sin(float(t)/200.)+4.)*100.)*sin(20./length(p))*sin(p.x*14.)*sin(p.y*24.);'
+db 'gl_FragColor=vec4(sin(c),cos(c),c,1.);'
+db '}'
 db 0
 var_t:
 db 't', 0
@@ -395,6 +408,9 @@ db	'SDL_Init', 0
 db	'SDL_SetVideoMode', 0
 db	'SDL_PollEvent', 0
 db	'SDL_GetTicks', 0
+db	'SDL_OpenAudio', 0
+db	'SDL_PauseAudio', 0
+db	'SDL_ShowCursor', 0
 db	'SDL_GL_SwapBuffers', 0
 db	'SDL_Quit', 0
 db	0
@@ -416,6 +432,13 @@ db	'glDrawArrays', 0
 ;db	'glEnd', 0
 db	0, 0
 
+SDL_AudioSpec:
+	dd 44100
+	dw 0x8010
+	db 1
+	resb 9
+	dd synth
+
 file_size equ	($-$$)
 ;;;;;
 ; .bss
@@ -423,6 +446,8 @@ file_size equ	($-$$)
 ABSOLUTE $
 
 bss_begin:
+
+libdl_syms:
 dlopen_rel: resd 1
 dlsym_rel: resd 1
 
@@ -431,6 +456,9 @@ SDL_Init: resd 1
 SDL_SetVideoMode: resd 1
 SDL_PollEvent: resd 1
 SDL_GetTicks: resd 1
+SDL_OpenAudio: resd 1
+SDL_PauseAudio: resd 1
+SDL_ShowCursor: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
 glViewport: resd 1
