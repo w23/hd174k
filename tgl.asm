@@ -4,8 +4,8 @@
 
 %define BSSADDR(a) ebp + ((a) - bss_begin)
 %define F(f)	[ebp + ((f) - bss_begin)]
-%define WIDTH		800
-%define HEIGHT	600
+%define WIDTH		640
+%define HEIGHT	480
 
 org     0x00040000
 
@@ -382,15 +382,18 @@ exit:
 
 shader_vtx:
 db 'varying vec4 p;'
-db 'void main(){p=gl_Vertex;gl_Position=gl_Vertex;}'
+db 'void main(){p=gl_Position=gl_Vertex;}'
 db 0
 shader_frg:
-db 'uniform int t;varying vec4 p;'
-db 'void main(){'
-db 'float c = sin(p.x*p.y*(sin(float(t)/200.)+4.)*100.)*sin(20./length(p))*sin(p.x*14.)*sin(p.y*24.);'
-db 'gl_FragColor=vec4(sin(c),cos(c),c,1.);'
-db '}'
-db 0
+	db 	'uniform int t;varying vec4 p;'
+	db 	'void main(){'
+	db	'float f=float(t)/300.;'
+	db  'float l=length(p);'
+	db	'float a=4.*atan(p.y/p.x);'
+	db	'float b=sin(l*20.)+f;'
+	db	'gl_FragColor=vec4(sin(a+b*3.),sin(2.*a-b*3.),sin(3.*a+b*2.),0.);'
+	db	'}'
+	db 	0
 var_t:
 db 't', 0
 
@@ -440,7 +443,7 @@ SDL_AudioSpec:
 	dd 44100
 	dw 0x8010
 	db 1
-	resb 9
+	times 9 db 0
 	dd synth
 
 file_size equ	($-$$)
