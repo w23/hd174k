@@ -6,6 +6,7 @@
 %define F(f)	[ebp + ((f) - bss_begin)]
 %define WIDTH		640
 %define HEIGHT	480
+%define LENGTH	90
 
 org     0x00040000
 
@@ -135,10 +136,26 @@ _start:
 	; TODO: как можно этим воспользоваться при загрузке bss_begin в ebp?
 ;	lea	ebp, [edi+(bss_begin - _start)]	; ЖИРНАЯ ИНСТРУКЦИЯ 6 БАЙТ
 	
-	mov	ebp, bss_begin	; 5 байт и жмется лучше
+;	mov	ebp, bss_begin	; 5 байт и жмется лучше
 
 ;	mov ebp, edi ;	add ebp, (bss_begin - _start) ; 8 байт! пиздец!
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; presynth
+	mov ebp, snd_samples
+
+%define SE(a) (ebp + ((a) - snd_samples))
+	
+	lea edi, [SE(snd_samples)]
+	xor ecx, ecx
+presynth_loop:
+	mov ax, cx
+	stosw
+	inc ecx
+	cmp ecx, snd_samples_total
+	jnz presynth_loop
+
+	mov ebp, bss_begin
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dynamic linking {
@@ -196,18 +213,24 @@ ld_second_zero:
 
 ; lets USE something
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
-	call [BSSADDR(SDL_Init)]
+	call F(SDL_Init)
+
+	push 0
+	push SDL_AudioSpec
+	call F(SDL_OpenAudio)
 
 	push 	0x02	; SDL_OPENGL
 	push	32
 	push	HEIGHT
 	push	WIDTH
-	call	[BSSADDR(SDL_SetVideoMode)]
+	call	F(SDL_SetVideoMode)
 
 	; WxH уже есть в стеке! cdecl ftw!
 	push 0
 	push 0
-	call [BSSADDR(glViewport)]
+	call F(glViewport)
+	call F(SDL_ShowCursor)
+	call F(SDL_PauseAudio)
 
 	push vtx_bg_quad
 	push 0
@@ -360,10 +383,15 @@ mainloop:
 ;; UADIO
 
 synth:
-	pop edi	; ignore
-	pop edi		; where to
-	pop ecx		; how much
-	nop ; lol
+	mov edx, [esp+8]
+	mov ecx, [esp+12]
+	shr ecx, 1
+synth_loop:
+	mov eax, ecx
+	mov [edx], ax
+	inc edx
+	inc edx
+	loop synth_loop
 	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -373,7 +401,7 @@ exit:
 	call	[BSSADDR(SDL_Quit)]
 	xor	eax, eax
 	inc ax
-;	mov bl, 23	; couldn't care less
+;	xor ebx, ebx	; couldn't care less
 	int 0x80
 
 ;;;;;
@@ -484,9 +512,11 @@ glDrawArrays: resd 1
 ;glVertex2f: resd 1
 ;glEnd: resd 1
 
-;tp_sec: resd 1
-;tp_nano: resd 1
-
 SDL_Event: resb 24
+
+snd_samples_count: resd 1
+snd_samples_total equ 44100*LENGTH
+snd_samples:
+	resw snd_samples_total
 
 mem_size equ ($-$$)
