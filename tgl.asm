@@ -6,7 +6,7 @@
 %define F(f)	[ebp + ((f) - bss_begin)]
 %define WIDTH		640
 %define HEIGHT	480
-%define LENGTH	90
+%define LENGTH	10
 
 org     0x00040000
 
@@ -136,26 +136,22 @@ _start:
 	; TODO: как можно этим воспользоваться при загрузке bss_begin в ebp?
 ;	lea	ebp, [edi+(bss_begin - _start)]	; ЖИРНАЯ ИНСТРУКЦИЯ 6 БАЙТ
 	
-;	mov	ebp, bss_begin	; 5 байт и жмется лучше
+	mov	ebp, bss_begin	; 5 байт и жмется лучше
 
 ;	mov ebp, edi ;	add ebp, (bss_begin - _start) ; 8 байт! пиздец!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; presynth
-	mov ebp, snd_samples
-
-%define SE(a) (ebp + ((a) - snd_samples))
-	
-	lea edi, [SE(snd_samples)]
+	lea edi, [BSSADDR(snd_samples)]
 	xor ecx, ecx
+	xor ebx, ebx
+	mov	ax, -32768
 presynth_loop:
-	mov ax, cx
+	add ax, 328
 	stosw
 	inc ecx
 	cmp ecx, snd_samples_total
 	jnz presynth_loop
-
-	mov ebp, bss_begin
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dynamic linking {
@@ -382,23 +378,42 @@ mainloop:
 ;;;;;;;;;;;
 ;; UADIO
 
-synth:
-	mov edx, [esp+8]
-	mov ecx, [esp+12]
+snd_play:
+	push ebp
+	push esi
+	push edi
+	mov ebp, bss_begin
+	mov edi, [esp+20]
+	mov ecx, [esp+24]
 	shr ecx, 1
-synth_loop:
-	mov eax, ecx
-	mov [edx], ax
-	inc edx
-	inc edx
-	loop synth_loop
+	lea	esi, [BSSADDR(snd_samples_count)]
+	mov edx, [esi]
+	push edx
+	add edx, ecx
+	cmp	edx, snd_samples_total
+	jle	snd_update_counter
+
+	; в конце звука симулируем выход через нажатие клавиши (unsafe! может не сработать!)
+	lea edx, [BSSADDR(SDL_Event)]
+	mov byte [edx], 2
+	jmp snd_copy_samples
+
+snd_update_counter:
+	mov	[esi], edx
+snd_copy_samples:
+	pop edx
+	lea esi, [esi+edx*2+4]
+	rep movsw
+	pop edi
+	pop esi
+	pop ebp
 	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; RUN AWAY TO THE HELICOPTER
 
 exit:
-	call	[BSSADDR(SDL_Quit)]
+	call	F(SDL_Quit)
 	xor	eax, eax
 	inc ax
 ;	xor ebx, ebx	; couldn't care less
@@ -472,7 +487,7 @@ SDL_AudioSpec:
 	dw 0x8010
 	db 1
 	times 9 db 0
-	dd synth
+	dd snd_play
 
 file_size equ	($-$$)
 ;;;;;
@@ -514,9 +529,9 @@ glDrawArrays: resd 1
 
 SDL_Event: resb 24
 
-snd_samples_count: resd 1
 snd_samples_total equ 44100*LENGTH
+snd_samples_count: resd 1
 snd_samples:
-	resw snd_samples_total
+	resw snd_samples_total+44100 ; подушка безопасности
 
 mem_size equ ($-$$)
