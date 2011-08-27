@@ -224,6 +224,9 @@ ld_second_zero:
 	dec esi
 	mov dword [ebp], shader_frg
   call shader
+	push edi
+	call  F(glLinkProgram)
+  call  F(glUseProgram)
 	jmp shaders_end
 
 shader:
@@ -237,8 +240,9 @@ shader:
 		call	F(glCompileShader)
 		push	edi
 		call	F(glAttachShader)
-		call	F(glLinkProgram)
-		call	F(glUseProgram)
+; doesn't work on some drivers (intel?)
+;		call	F(glLinkProgram)
+;		call	F(glUseProgram)
 		add		esp, 4*6
 		ret
 	
