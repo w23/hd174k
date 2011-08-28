@@ -203,10 +203,8 @@ ld_second_zero:
 	push	word 32767
 	fldpi
 	fild	word [esp]		; st() = { 32767, pi, ... }
-	pop		ax
-	xor		eax, eax
-	xor 	ebx, ebx
-	xor 	ecx, ecx
+	pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
+	mov		ecx, snd_samples_total
 presynth_loop:
 	add		ax, 653
 	push	ax
@@ -220,9 +218,7 @@ presynth_loop:
 	pop 	ax
 	stosw
 	pop		ax
-	inc		ecx
-	cmp		ecx, snd_samples_total
-	jnz		presynth_loop
+	loop	presynth_loop
 
 ; lets USE something
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
@@ -447,11 +443,25 @@ db 0
 shader_frg:
 	db 	'uniform int t;varying vec4 p;'
 	db 	'void main(){'
-	db	'float f=float(t)/300.;'
-	db  'float l=length(p);'
-	db	'float a=4.*atan(p.y/p.x);'
-	db	'float b=sin(l*20.)+f;'
-	db	'gl_FragColor=vec4(sin(a+b*3.),sin(2.*a-b*3.),sin(3.*a+b*2.),0.);'
+; кривости
+;	db	'float f=float(t)/300.;'
+;	db  'float l=length(p);'
+;	db	'float a=4.*atan(p.y/p.x);'
+;	db	'float b=sin(l*20.)+f;'
+;	db	'gl_FragColor=vec4(sin(a+b*3.),sin(2.*a-b*3.),sin(3.*a+b*2.),0.);'
+; пропеллер
+;	db	'float a,f;'
+;	db	'a=4.*atan(p.y/p.x);'
+;	db	'f=float(t)/200.;'
+;	db	'gl_FragColor=vec4(sin(a+f),sin(2.*a-f),0.,0.);'
+; плазма
+	db	'float c,f=float(t)/5000.;'
+	db	'vec2 s1,s2;'
+	db	's1=4.*vec2(sin(-f),cos(-f));'
+	db	's2=7.*vec2(sin(f*3.),cos(f*3.));'
+	db	'c=sin(3.*p.x+s1.x)*sin(4.*p.y+s1.y)'
+	db	'+sin(7.*p.x+s2.x)*sin(5.*p.y+s2.y);'
+	db	'gl_FragColor=vec4(c/4.+.5,c,-c/2.-1.,0.);';c,clamp(c,-1.,0.)+1.,clamp(c,-1.,1.)-1.,0.)*length(p);'
 	db	'}'
 	db 	0
 var_t:
