@@ -4,7 +4,7 @@
 ; Params
 %define WIDTH   640
 %define HEIGHT  480
-%define LENGTH  10
+%define LENGTH  20
 
 ; Useful!
 %define BSSADDR(a) ebp + ((a) - bss_begin)
@@ -200,10 +200,10 @@ ld_second_zero:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; presynth
 	lea 	edi, [BSSADDR(snd_samples)]
-	push	word 32767
+	push	dword 32767
 	fldpi
-	fild	word [esp]		; st() = { 32767, pi, ... }
-	pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
+	fild	dword [esp]		; st() = { 32767, pi, ... }
+	;pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
 	mov		ecx, snd_samples_total
 presynth_loop:
 	add		ax, 653
@@ -460,8 +460,15 @@ shader_frg:
 	db	's1=4.*vec2(sin(-f),cos(-f));'
 	db	's2=7.*vec2(sin(f*3.),cos(f*3.));'
 	db	'c=sin(3.*p.x+s1.x)*sin(4.*p.y+s1.y)'
-	db	'+sin(7.*p.x+s2.x)*sin(5.*p.y+s2.y);'
-	db	'gl_FragColor=vec4(c/4.+.5,c,-c/2.-1.,0.);';c,clamp(c,-1.,0.)+1.,clamp(c,-1.,1.)-1.,0.)*length(p);'
+	db	'+sin(7.*p.x+s2.x)*sin(2.*p.y+s2.y);'
+	db	'gl_FragColor='
+;vec4(c/4.+.5,c,-c/2.-1.,0.);';c,clamp(c,-1.,0.)+1.,clamp(c,-1.,1.)-1.,0.)*length(p);'
+	
+; somewhat good
+	db	'vec4(c+sqrt(-c/2.-1.),c/4.+.5,log2(c)+exp(c),0.);'
+
+; also
+;	db	'vec4(c/4.+.5,.8+log2(-c)+c/2.,.1/c+exp(-c/2.-1.),0.);'
 	db	'}'
 	db 	0
 var_t:
