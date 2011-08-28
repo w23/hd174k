@@ -1,10 +1,17 @@
+; hd174k, a <s>4k</s> 854bytes intro by Ye Olde Laptops Posse
+; 	code: w23 (me@w23.ru)
+; 	color model: korvin
+;		additional help: decelas
+
 ; created somewhere in the middle of august 2011
-; by Ivan 'w23' Avdeev, me@w23.ru
+; released 28.08.2011 @ Hackday17, Novosibirsk, Russia
+
+; PARTYVERSION, WITHOUT SOUND (is incomplete atm)
 
 ; Params
-%define WIDTH   640
+%define WIDTH   720
 %define HEIGHT  480
-%define LENGTH  20
+%define LENGTH  120
 
 ; Useful!
 %define BSSADDR(a) ebp + ((a) - bss_begin)
@@ -199,36 +206,36 @@ ld_second_zero:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; presynth
-	lea 	edi, [BSSADDR(snd_samples)]
-	push	dword 32767
-	fldpi
-	fild	dword [esp]		; st() = { 32767, pi, ... }
-	;pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
-	mov		ecx, snd_samples_total
-presynth_loop:
-	add		ax, 653
-	push	ax
-	push	ax
-	fild	word [esp]			; {phase_int, 32767, pi }
-	fdiv	st0,st1					; {phase_(-1,1), --//--}
-	fmul	st0,st2					;	{phase_(-pi,pi), --//--}
-	fsin									; {sine!}
-	fmul	st0,st1					; {sine -32767, 32767}
-	fistp	word [esp]			;
-	pop 	ax
-	stosw
-	pop		ax
-	loop	presynth_loop
+;	lea 	edi, [BSSADDR(snd_samples)]
+;	push	dword 32767
+;	fldpi
+;	fild	dword [esp]		; st() = { 32767, pi, ... }
+;	;pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
+;	mov		ecx, snd_samples_total
+;presynth_loop:
+;	add		ax, 653
+;	push	ax
+;	push	ax
+;	fild	word [esp]			; {phase_int, 32767, pi }
+;	fdiv	st0,st1					; {phase_(-1,1), --//--}
+;	fmul	st0,st2					;	{phase_(-pi,pi), --//--}
+;	fsin									; {sine!}
+;	fmul	st0,st1					; {sine -32767, 32767}
+;	fistp	word [esp]			;
+;	pop 	ax
+;	stosw
+;	pop		ax
+;	loop	presynth_loop
 
 ; lets USE something
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
 	call F(SDL_Init)
 
-	push 0
-	push SDL_AudioSpec
-	call F(SDL_OpenAudio)
+;	push 0
+;	push SDL_AudioSpec
+;	call F(SDL_OpenAudio)
 
-	push 	0x02	; SDL_OPENGL
+	push 	0x80000002	; SDL_OPENGL
 	push	32
 	push	HEIGHT
 	push	WIDTH
@@ -239,7 +246,7 @@ presynth_loop:
 	push 0
 	call F(glViewport)
 	call F(SDL_ShowCursor)
-	call F(SDL_PauseAudio)
+;	call F(SDL_PauseAudio)
 
 	push vtx_bg_quad
 	push 0
@@ -391,36 +398,36 @@ mainloop:
 ;;;;;;;;;;;
 ;; UADIO
 
-snd_play:
-	push ebp
-	push esi
-	push edi
-	mov ebp, bss_begin
-	mov edi, [esp+20]
-	mov ecx, [esp+24]
-	shr ecx, 1
-	lea	esi, [BSSADDR(snd_samples_count)]
-	mov edx, [esi]
-	push edx
-	add edx, ecx
-	cmp	edx, snd_samples_total
-	jle	snd_update_counter
+;snd_play:
+;	push ebp
+;	push esi
+;	push edi
+;	mov ebp, bss_begin
+;	mov edi, [esp+20]
+;	mov ecx, [esp+24]
+;	shr ecx, 1
+;	lea	esi, [BSSADDR(snd_samples_count)]
+;	mov edx, [esi]
+;	push edx
+;	add edx, ecx
+;	cmp	edx, snd_samples_total
+;	jle	snd_update_counter
 
-	; в конце звука симулируем выход через нажатие клавиши (unsafe! может не сработать!)
-	lea edx, [BSSADDR(SDL_Event)]
-	mov byte [edx], 2
-	jmp snd_copy_samples
+;	; в конце звука симулируем выход через нажатие клавиши (unsafe! может не сработать!)
+;	lea edx, [BSSADDR(SDL_Event)]
+;	mov byte [edx], 2
+;	jmp snd_copy_samples
 
-snd_update_counter:
-	mov	[esi], edx
-snd_copy_samples:
-	pop edx
-	lea esi, [esi+edx*2+4]
-	rep movsw
-	pop edi
-	pop esi
-	pop ebp
-	ret
+;snd_update_counter:
+;	mov	[esi], edx
+;snd_copy_samples:
+;	pop edx
+;	lea esi, [esi+edx*2+4]
+;	rep movsw
+;	pop edi
+;	pop esi
+;	pop ebp
+;	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; RUN AWAY! TO THE HELICOPTER!
@@ -492,8 +499,8 @@ db	'SDL_Init', 0
 db	'SDL_SetVideoMode', 0
 db	'SDL_PollEvent', 0
 db	'SDL_GetTicks', 0
-db	'SDL_OpenAudio', 0
-db	'SDL_PauseAudio', 0
+;db	'SDL_OpenAudio', 0
+;db	'SDL_PauseAudio', 0
 db	'SDL_ShowCursor', 0
 db	'SDL_GL_SwapBuffers', 0
 db	'SDL_Quit', 0
@@ -516,15 +523,15 @@ db	'glDrawArrays', 0
 ;db	'glEnd', 0
 db	0, 0
 
-snd_score:
-	db	24, 36, 48
+;snd_score:
+;	db	24, 36, 48
 
-SDL_AudioSpec:
-	dd 44100
-	dw 0x8010
-	db 1
-	times 9 db 0
-	dd snd_play
+;SDL_AudioSpec:
+;	dd 44100
+;	dw 0x8010
+;	db 1
+;	times 9 db 0
+;	dd snd_play
 
 file_size equ	($-$$)
 ;;;;;
@@ -543,8 +550,8 @@ SDL_Init: resd 1
 SDL_SetVideoMode: resd 1
 SDL_PollEvent: resd 1
 SDL_GetTicks: resd 1
-SDL_OpenAudio: resd 1
-SDL_PauseAudio: resd 1
+;SDL_OpenAudio: resd 1
+;SDL_PauseAudio: resd 1
 SDL_ShowCursor: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
@@ -566,12 +573,12 @@ glDrawArrays: resd 1
 
 SDL_Event: resb 24
 
-snd_osc_phase_delta: resd 1
-snd_osc_phase: resd 1
-
-snd_samples_total equ 44100*LENGTH
-snd_samples_count: resd 1
-snd_samples:
-	resw snd_samples_total+44100 ; подушка безопасности
+;snd_osc_phase_delta: resd 1
+;snd_osc_phase: resd 1
+;
+;snd_samples_total equ 44100*LENGTH
+;snd_samples_count: resd 1
+;snd_samples:
+;	resw snd_samples_total+44100 ; подушка безопасности
 
 mem_size equ ($-$$)
