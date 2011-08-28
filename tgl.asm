@@ -1,13 +1,16 @@
-; nasm -f bin elf32-dlopen.asm && chmod +x elf32-dlopen && wc -c elf32-dlopen && ./elf32-dlopen; echo $?; readelf -a elf32-dlopen
+; created somewhere in the middle of august 2011
+; by Ivan 'w23' Avdeev, me@w23.ru
 
-;; Macro for accessing addresses in .bss and some of .text via ebp.
+; Params
+%define WIDTH   640
+%define HEIGHT  480
+%define LENGTH  10
 
+; Useful!
 %define BSSADDR(a) ebp + ((a) - bss_begin)
 %define F(f)	[ebp + ((f) - bss_begin)]
-%define WIDTH		640
-%define HEIGHT	480
-%define LENGTH	10
 
+; where to load?
 org     0x00040000
 
 ; x86, not x86-64
@@ -141,19 +144,6 @@ _start:
 ;	mov ebp, edi ;	add ebp, (bss_begin - _start) ; 8 байт! пиздец!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; presynth
-	lea edi, [BSSADDR(snd_samples)]
-	xor ecx, ecx
-	xor ebx, ebx
-	mov	ax, -32768
-presynth_loop:
-	add ax, 328
-	stosw
-	inc ecx
-	cmp ecx, snd_samples_total
-	jnz presynth_loop
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dynamic linking {
 
 ;	lea edi, [BSSADDR(libs_syms)]			; edi <- места для адресов функций							3 байт
@@ -206,6 +196,33 @@ ld_second_zero:
 
 ;; } dynamic linking
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; presynth
+	lea 	edi, [BSSADDR(snd_samples)]
+	push	word 32767
+	fldpi
+	fild	word [esp]		; st() = { 32767, pi, ... }
+	pop		ax
+	xor		eax, eax
+	xor 	ebx, ebx
+	xor 	ecx, ecx
+presynth_loop:
+	add		ax, 653
+	push	ax
+	push	ax
+	fild	word [esp]			; {phase_int, 32767, pi }
+	fdiv	st0,st1					; {phase_(-1,1), --//--}
+	fmul	st0,st2					;	{phase_(-pi,pi), --//--}
+	fsin									; {sine!}
+	fmul	st0,st1					; {sine -32767, 32767}
+	fistp	word [esp]			;
+	pop 	ax
+	stosw
+	pop		ax
+	inc		ecx
+	cmp		ecx, snd_samples_total
+	jnz		presynth_loop
 
 ; lets USE something
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
@@ -410,7 +427,7 @@ snd_copy_samples:
 	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; RUN AWAY TO THE HELICOPTER
+;; RUN AWAY! TO THE HELICOPTER!
 
 exit:
 	call	F(SDL_Quit)
@@ -482,6 +499,9 @@ db	'glDrawArrays', 0
 ;db	'glEnd', 0
 db	0, 0
 
+snd_score:
+	db	24, 36, 48
+
 SDL_AudioSpec:
 	dd 44100
 	dw 0x8010
@@ -528,6 +548,9 @@ glDrawArrays: resd 1
 ;glEnd: resd 1
 
 SDL_Event: resb 24
+
+snd_osc_phase_delta: resd 1
+snd_osc_phase: resd 1
 
 snd_samples_total equ 44100*LENGTH
 snd_samples_count: resd 1
