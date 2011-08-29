@@ -283,31 +283,29 @@ ld_second_zero:
 	jmp shaders_end
 
 shader:
-		push	esi
+		push 	esi
 		call	F(glCreateShader)
 ;		call 	errcheck
-		mov		[esp], eax
+		mov		ebx, eax
 		push	0
 		push	ebp
 		push	1
 		push	eax
 		call	F(glShaderSource)
 ; NVIDIA drivers spoil our stack! the angriness!
-		mov		eax, [esp+16]
-		mov		[esp], eax
+		push	 ebx
 ;		call    errcheck
 		call	F(glCompileShader)
 ;		call    errcheck
 ; lol nvidia
-		mov     eax, [esp+16]
-        mov     [esp], eax
+		push	ebx
 		push	edi
-		call	F(glAttachShader)
+		call		F(glAttachShader)	; TODO: reuse ret ! (gcc does that!)
 ;		call    errcheck
 ; doesn't work on some drivers (intel?)
 ;		call	F(glLinkProgram)
 ;		call	F(glUseProgram)
-		add		esp, 4*6
+		add		esp, 4*8
 		ret
 
 ;errcheck:

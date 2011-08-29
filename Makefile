@@ -5,14 +5,17 @@ ELF_HEADER_SIZE=346
 
 release: $(PROD)
 
+clean: $(PROD)
+	rm	$(PROD) $(PROD).gz $(PROD).elf 
+
 compress: $(PROD).gz
 
-show: $(PROD).elf
+show: $(PROD)
 	udcli -s $(ELF_HEADER_SIZE) $(PROD).elf | less
 
 compile: $(PROD).elf
 
-debug: $(PROD).elf
+debug: $(PROD)
 	readelf -a $(PROD).elf|grep Entry
 	gdb $(PROD).elf
 
@@ -26,6 +29,6 @@ $(PROD).gz: $(PROD).elf
 	7z a -tGZip -mx=9 $(PROD).gz $(PROD).elf
 
 $(PROD).elf: $(PROD).asm
-	nasm -f bin $(PROD).asm -o $(PROD).elf
+	nasm -Ox -f bin $(PROD).asm -o $(PROD).elf
 	chmod +x $(PROD).elf
 	wc -c $(PROD).elf
