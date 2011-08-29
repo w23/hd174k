@@ -9,8 +9,8 @@
 #include <SDL.h>
 #include <GL/gl.h>
 
-#define W 1920
-#define H 1080
+#define W 720
+#define H 480
 
 
 char* shader_vtx[] = {
@@ -33,6 +33,12 @@ char* shader_frg[] = {
 	"}"
 };
 
+float vtx_bg_quad[8] = {
+-1, -1,
+-1, 1,
+1, 1,
+1, -1 };
+
 void shader(char** src, int type, int p)
 {
 	int s = glCreateShader(type);
@@ -44,10 +50,12 @@ void shader(char** src, int type, int p)
 int main()
 {
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_SetVideoMode(W, H, 32, SDL_OPENGL|SDL_FULLSCREEN);
-	SDL_ShowCursor(0);
+	SDL_SetVideoMode(W, H, 32, SDL_OPENGL);//|SDL_FULLSCREEN);
 
 	glViewport(0,0,W,H);
+	SDL_ShowCursor(0);
+
+	glInterleavedArrays(0x2A20, 0, vtx_bg_quad);
 	
 	int p = glCreateProgram();
 	shader(shader_vtx, GL_VERTEX_SHADER, p);
@@ -60,14 +68,10 @@ int main()
 	SDL_Event e;
 	for(;;)
 	{
-		if(SDL_PollEvent(&e) && e.type == 2) break;
+		SDL_PollEvent(&e);
+		if (e.type == 2) break;
 		glUniform1i(tloc,SDL_GetTicks());
-		glBegin(GL_QUADS);
-		glVertex2f(-1,-1);
-		glVertex2f(-1,1);
-		glVertex2f(1,1);
-		glVertex2f(1,-1);
-		glEnd();
+		glDrawArrays(7, 0, 4);
 		SDL_GL_SwapBuffers();
 	}
 	SDL_Quit();

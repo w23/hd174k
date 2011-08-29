@@ -248,11 +248,13 @@ ld_second_zero:
 	push	HEIGHT
 	push	WIDTH
 	call	F(SDL_SetVideoMode)
+;	call    errcheck
 
 	; WxH уже есть в стеке! cdecl ftw!
 	push 0
 	push 0
 	call F(glViewport)
+;	call    errcheck
 	call F(SDL_ShowCursor)
 ;	call F(SDL_PauseAudio)
 
@@ -264,8 +266,10 @@ ld_second_zero:
 	; shaders
 	
 	call F(glCreateProgram)
+;	call    errcheck
 	mov edi, eax
-	mov esi, 0x8B31
+	xor	esi, esi
+	mov si, 0x8B31
 	mov dword [ebp], shader_vtx
 	call shader
 	dec esi
@@ -273,25 +277,48 @@ ld_second_zero:
   call shader
 	push edi
 	call  F(glLinkProgram)
+;	call    errcheck
   call  F(glUseProgram)
+ ; call    errcheck
 	jmp shaders_end
 
 shader:
 		push	esi
 		call	F(glCreateShader)
+;		call 	errcheck
+		mov		[esp], eax
 		push	0
 		push	ebp
 		push	1
 		push	eax
 		call	F(glShaderSource)
+; NVIDIA drivers spoil our stack! the angriness!
+		mov		eax, [esp+16]
+		mov		[esp], eax
+;		call    errcheck
 		call	F(glCompileShader)
+;		call    errcheck
+; lol nvidia
+		mov     eax, [esp+16]
+        mov     [esp], eax
 		push	edi
 		call	F(glAttachShader)
+;		call    errcheck
 ; doesn't work on some drivers (intel?)
 ;		call	F(glLinkProgram)
 ;		call	F(glUseProgram)
 		add		esp, 4*6
 		ret
+
+;errcheck:
+;	pushad
+;	call F(glGetError)
+;	cmp	eax, 0
+;	popad
+;	jz	noerr
+;	int 3
+;noerr:
+;	ret
 	
 shaders_end:
 
@@ -527,6 +554,7 @@ db	'glGetUniformLocation', 0
 db	'glUniform1i', 0
 db	'glInterleavedArrays', 0
 db	'glDrawArrays', 0
+db	'glGetError', 0
 ;db	'glBegin', 0
 ;db	'glVertex2f', 0
 ;db	'glEnd', 0
@@ -576,6 +604,7 @@ glGetUniformLocation: resd 1
 glUniform1i: resd 1
 glInterleavedArrays: resd 1
 glDrawArrays: resd 1
+glGetError: resd 1
 ;glBegin: resd 1
 ;glVertex2f: resd 1
 ;glEnd: resd 1
