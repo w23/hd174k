@@ -12,13 +12,15 @@
 %define WIDTH   720
 %define HEIGHT  480
 %define LENGTH  120
+;%define	FULLSCREEN	0x80000000
+%define FULLSCREEN	0
 
 ; Useful!
 %define BSSADDR(a) ebp + ((a) - bss_begin)
 %define F(f)	[ebp + ((f) - bss_begin)]
 
 ; where to load?
-org     0x00040000
+org     0x08048000
 
 ; x86, not x86-64
 BITS 32
@@ -90,7 +92,9 @@ interp_size equ $ - interp
 dynamic_unpadded:
 times (4 - (($$-$) % 4)) db 0x23
 dynamic:
-dd 1, libdl_name	; DT_NEEDED
+	dd 	1,	libdl_name	; DT_NEEDED
+;	dd	1,	libSDL_name	; DT_NEEDED
+;	dd	1,	libGL_name	; DT_NEEDED
 dd 4,	hash	; DT_HASH
 dd 5,	strtab	; DT_STRTAB
 dd 6,	symtab	; DT_SYMTAB
@@ -121,13 +125,17 @@ dd 2
 dd 0, 0, 1	; ???
 
 strtab:
-libdl_name equ $ - strtab
-db 'libdl.so.2', 0
-dlopen_name equ $ - strtab
-db 'dlopen', 0
-dlsym_name equ $ - strtab
-db 'dlsym', 0	
-strtab_size equ $ - strtab
+	libdl_name equ $ - strtab
+	db 	'libdl.so.2', 0
+;	libSDL_name equ $ - strtab
+;	db	'libSDL-1.2.so.0', 0
+;	libGL_name	equ $ - strtab
+;	db	'libGL.so', 0
+	dlopen_name equ $ - strtab
+	db 	'dlopen', 0
+	dlsym_name equ $ - strtab
+	db 	'dlsym', 0	
+	strtab_size equ $ - strtab
 
 reltext:
 	dd	dlopen_rel
@@ -235,7 +243,7 @@ ld_second_zero:
 ;	push SDL_AudioSpec
 ;	call F(SDL_OpenAudio)
 
-	push 	0x80000002	; SDL_OPENGL
+	push 	2 | FULLSCREEN	; SDL_OPENGL
 	push	32
 	push	HEIGHT
 	push	WIDTH
@@ -494,7 +502,8 @@ dd 0x3f800000, 0xbf800000
 
 ; libraries to load
 libs_to_dl:
-db	'libSDL.so', 0
+;db	'libSDL-1.2.so.0', 0
+	db	'libSDL.so', 0
 db	'SDL_Init', 0
 db	'SDL_SetVideoMode', 0
 db	'SDL_PollEvent', 0
