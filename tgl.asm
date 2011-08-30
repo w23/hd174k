@@ -20,7 +20,7 @@
 %define F(f)	[ebp + ((f) - bss_begin)]
 
 ; where to load?
-org     0x08048000
+org     0x00040000
 
 ; x86, not x86-64
 BITS 32
