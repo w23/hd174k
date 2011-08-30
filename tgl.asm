@@ -394,17 +394,18 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
-; begin-end whole mess: 39 packed bytes
 	push 7	; GL_QUADS
 	call F(glBegin)
-	xor eax, eax
-	mov ebx, 0xbf800000
-	mov ecx, 0x3f800000
-	push ebx
-	push ecx
-	push ecx
-	push ebx
-	push ebx
+
+	mov		eax, 0x3f800000
+	mov		ebx, 0xbf800000
+	push	ebx
+	push	eax
+	push	eax
+	push	ebx
+	push	ebx
+
+; goode compressione <i>!!</i>
 	call F(glVertex2f)
 	pop edx
 	call F(glVertex2f)
@@ -412,21 +413,19 @@ mainloop:
 	call F(glVertex2f)
 	pop edx
 	call F(glVertex2f)
+	pop edx
+
 	call F(glEnd)
-	add esp, 5*4
+	add esp, 4*4
 
-; whole mess 45 packed bytes
-;	push 4
-;	push 0
-;	push 7
-;	call F(glDrawArrays)
-;	add esp, 4*3
-
-;; END OF THE LOOP
+;; END OF THE RABOTA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	call [BSSADDR(SDL_GL_SwapBuffers)]
 	jmp mainloop
+
+;; LOOP ENDS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;
 ;; UADIO
