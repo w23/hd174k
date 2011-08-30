@@ -214,6 +214,22 @@ ld_second_zero:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; presynth
+	mov [ebp], dword 44100
+	fild  dword [ebp]
+	mov [ebp], word 440
+	fild	word [ebp]
+	mov	[ebp], word 32767
+	fild	word [ebp]				; {32767, 440, 44100, ...}
+	fld1										; {1, ...}
+	fadd	st0, st0
+	fldpi
+	fmulp										; {2pi, 32767, 440, 44100, ...}
+	fmul	st0, st2
+	fdiv	st0, st3
+	fldz										; {phase(=0), dp, 32767, 440, 44100, ...}
+	fnsave 	[BSSADDR(snd_reg_state)]
+
+; OLDE, FAT
 ;	lea 	edi, [BSSADDR(snd_samples)]
 ;	push	dword 32767
 ;	fldpi
@@ -239,9 +255,9 @@ ld_second_zero:
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
 	call F(SDL_Init)
 
-;	push 0
-;	push SDL_AudioSpec
-;	call F(SDL_OpenAudio)
+	push 0
+	push SDL_AudioSpec
+	call F(SDL_OpenAudio)
 
 	push 	2 | FULLSCREEN	; SDL_OPENGL
 	push	32
@@ -256,12 +272,7 @@ ld_second_zero:
 	call F(glViewport)
 ;	call    errcheck
 	call F(SDL_ShowCursor)
-;	call F(SDL_PauseAudio)
-
-;	push vtx_bg_quad
-;	push 0
-;	push 0x2A20
-;	call F(glInterleavedArrays)
+	call F(SDL_PauseAudio)
 
 	; shaders
 	
@@ -356,15 +367,12 @@ shaders_end:
 ;	call F(glLinkProgram)
 ;	call F(glUseProgram)
 
-	; WRONG stack here: WRONG prog, frg, ?, ?, ?, vtx
-	; edi = program
+	; edi == program
 
 	push var_t
 	push edi
 	call F(glGetUniformLocation)
 	push eax
-
-	; stack here: t_loc, prog, ? WRONG: ?, frg, ?, ?, ?, vtx
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
@@ -383,7 +391,7 @@ mainloop:
 	jz exit
 
 	call F(SDL_GetTicks)
-	; eax = time
+	; eax == time
 
 	pop ebx
 	push ebx
@@ -430,7 +438,26 @@ mainloop:
 ;;;;;;;;;;;
 ;; UADIO
 
-;snd_play:
+snd_play:
+	push	ebp
+	mov		ebp, snd_reg_state
+	mov		eax, [esp+12]
+	mov		ecx, [esp+16]
+	shr		ecx, 1
+	frstor	[ebp]		; {phase, dp, 32767, 440, 44100, ...}
+snd_loop:
+	fadd	st0, st1
+	fld		st0
+	fsin
+	fmul	st0, st3
+	fistp	word [eax]
+	add		eax, byte 2
+	loop 	snd_loop
+	fnsave	[ebp]
+	pop		ebp
+	ret
+
+; OLDPLAY:
 ;	push ebp
 ;	push esi
 ;	push edi
@@ -532,8 +559,8 @@ db	'SDL_Init', 0
 db	'SDL_SetVideoMode', 0
 db	'SDL_PollEvent', 0
 db	'SDL_GetTicks', 0
-;db	'SDL_OpenAudio', 0
-;db	'SDL_PauseAudio', 0
+db	'SDL_OpenAudio', 0
+db	'SDL_PauseAudio', 0
 db	'SDL_ShowCursor', 0
 db	'SDL_GL_SwapBuffers', 0
 db	'SDL_Quit', 0
@@ -560,12 +587,12 @@ db	0, 0
 ;snd_score:
 ;	db	24, 36, 48
 
-;SDL_AudioSpec:
-;	dd 44100
-;	dw 0x8010
-;	db 1
-;	times 9 db 0
-;	dd snd_play
+SDL_AudioSpec:
+	dd 44100
+	dw 0x8010			; S16SYS
+	db 1					; channels
+	times 9 db 0
+	dd snd_play
 
 file_size equ	($-$$)
 ;;;;;
@@ -584,8 +611,8 @@ SDL_Init: resd 1
 SDL_SetVideoMode: resd 1
 SDL_PollEvent: resd 1
 SDL_GetTicks: resd 1
-;SDL_OpenAudio: resd 1
-;SDL_PauseAudio: resd 1
+SDL_OpenAudio: resd 1
+SDL_PauseAudio: resd 1
 SDL_ShowCursor: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
@@ -607,6 +634,9 @@ glVertex2f: resd 1
 glEnd: resd 1
 
 SDL_Event: resb 24
+
+snd_data:
+snd_reg_state: resb 108
 
 ;snd_osc_phase_delta: resd 1
 ;snd_osc_phase: resd 1
