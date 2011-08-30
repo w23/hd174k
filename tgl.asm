@@ -258,10 +258,10 @@ ld_second_zero:
 	call F(SDL_ShowCursor)
 ;	call F(SDL_PauseAudio)
 
-	push vtx_bg_quad
-	push 0
-	push 0x2A20
-	call F(glInterleavedArrays)
+;	push vtx_bg_quad
+;	push 0
+;	push 0x2A20
+;	call F(glInterleavedArrays)
 
 	; shaders
 	
@@ -395,32 +395,32 @@ mainloop:
 ;; THE POLEZNAYA RABOTA
 
 ; begin-end whole mess: 39 packed bytes
-;	push 7	; GL_QUADS
-;	call F(glBegin)
-;	xor eax, eax
-;	mov ebx, 0xbf800000
-;	mov ecx, 0x3f800000
-;	push ebx
-;	push ecx
-;	push ecx
-;	push ebx
-;	push ebx
-;	call F(glVertex2f)
-;	pop edx
-;	call F(glVertex2f)
-;	pop edx
-;	call F(glVertex2f)
-;	pop edx
-;	call F(glVertex2f)
-;	add esp, (3+2)*4
-;	call F(glEnd)
+	push 7	; GL_QUADS
+	call F(glBegin)
+	xor eax, eax
+	mov ebx, 0xbf800000
+	mov ecx, 0x3f800000
+	push ebx
+	push ecx
+	push ecx
+	push ebx
+	push ebx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	pop edx
+	call F(glVertex2f)
+	call F(glEnd)
+	add esp, 5*4
 
 ; whole mess 45 packed bytes
-	push 4
-	push 0
-	push 7
-	call F(glDrawArrays)
-	add esp, 4*3
+;	push 4
+;	push 0
+;	push 7
+;	call F(glDrawArrays)
+;	add esp, 4*3
 
 ;; END OF THE LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -514,11 +514,11 @@ shader_frg:
 var_t:
 db 't', 0
 
-vtx_bg_quad:
-dd 0xbf800000, 0xbf800000
-dd 0xbf800000, 0x3f800000
-dd 0x3f800000, 0x3f800000
-dd 0x3f800000, 0xbf800000
+;vtx_bg_quad:
+;dd 0xbf800000, 0xbf800000
+;dd 0xbf800000, 0x3f800000
+;dd 0x3f800000, 0x3f800000
+;dd 0x3f800000, 0xbf800000
 
 ; END of known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -550,12 +550,12 @@ db  'glLinkProgram', 0
 db  'glUseProgram', 0
 db	'glGetUniformLocation', 0
 db	'glUniform1i', 0
-db	'glInterleavedArrays', 0
-db	'glDrawArrays', 0
-db	'glGetError', 0
-;db	'glBegin', 0
-;db	'glVertex2f', 0
-;db	'glEnd', 0
+;db	'glInterleavedArrays', 0
+;db	'glDrawArrays', 0
+;db	'glGetError', 0
+db	'glBegin', 0
+db	'glVertex2f', 0
+db	'glEnd', 0
 db	0, 0
 
 ;snd_score:
@@ -600,12 +600,12 @@ glLinkProgram: resd 1
 glUseProgram: resd 1
 glGetUniformLocation: resd 1
 glUniform1i: resd 1
-glInterleavedArrays: resd 1
-glDrawArrays: resd 1
-glGetError: resd 1
-;glBegin: resd 1
-;glVertex2f: resd 1
-;glEnd: resd 1
+;glInterleavedArrays: resd 1
+;glDrawArrays: resd 1
+;glGetError: resd 1
+glBegin: resd 1
+glVertex2f: resd 1
+glEnd: resd 1
 
 SDL_Event: resb 24
 
