@@ -414,14 +414,14 @@ mainloop:
 	push	ebx
 
 ; goode compressione <i>!!</i>
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	pop edx
-	call F(glVertex2f)
-	pop edx
+	call	F(glVertex2f)
+	pop		edx
+	call	F(glVertex2f)
+	pop		edx
+	call	F(glVertex2f)
+	pop		edx
+	call 	F(glVertex2f)
+	pop		edx
 
 	call F(glEnd)
 	add esp, 4*4
