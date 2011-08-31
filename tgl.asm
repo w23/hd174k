@@ -127,10 +127,6 @@ dd 0, 0, 1	; ???
 strtab:
 	libdl_name equ $ - strtab
 	db 	'libdl.so.2', 0
-;	libSDL_name equ $ - strtab
-;	db	'libSDL-1.2.so.0', 0
-;	libGL_name	equ $ - strtab
-;	db	'libGL.so', 0
 	dlopen_name equ $ - strtab
 	db 	'dlopen', 0
 	dlsym_name equ $ - strtab
@@ -229,28 +225,6 @@ ld_second_zero:
 	fldz										; {phase(=0), dp, 32767, 440, 44100, ...}
 	fnsave 	[BSSADDR(snd_reg_state)]
 
-; OLDE, FAT
-;	lea 	edi, [BSSADDR(snd_samples)]
-;	push	dword 32767
-;	fldpi
-;	fild	dword [esp]		; st() = { 32767, pi, ... }
-;	;pop		ax	; WTF, почему-то удаление этого pop вызывает коллапс вселенной. выравнивание?
-;	mov		ecx, snd_samples_total
-;presynth_loop:
-;	add		ax, 653
-;	push	ax
-;	push	ax
-;	fild	word [esp]			; {phase_int, 32767, pi }
-;	fdiv	st0,st1					; {phase_(-1,1), --//--}
-;	fmul	st0,st2					;	{phase_(-pi,pi), --//--}
-;	fsin									; {sine!}
-;	fmul	st0,st1					; {sine -32767, 32767}
-;	fistp	word [esp]			;
-;	pop 	ax
-;	stosw
-;	pop		ax
-;	loop	presynth_loop
-
 ; lets USE something
 	push 0x31									; SDL_INIT_ TIMER | AUDIO | VIDEO
 	call F(SDL_Init)
@@ -264,20 +238,20 @@ ld_second_zero:
 	push	HEIGHT
 	push	WIDTH
 	call	F(SDL_SetVideoMode)
-;	call    errcheck
+;call    errcheck
 
 	; WxH уже есть в стеке! cdecl ftw!
 	push 0
 	push 0
 	call F(glViewport)
-;	call    errcheck
+;call    errcheck
 	call F(SDL_ShowCursor)
 	call F(SDL_PauseAudio)
 
 	; shaders
 	
 	call F(glCreateProgram)
-;	call    errcheck
+;call    errcheck
 	mov edi, eax
 	xor	esi, esi
 	mov si, 0x8B31
@@ -285,12 +259,12 @@ ld_second_zero:
 	call shader
 	dec esi
 	mov dword [ebp], shader_frg
-  call shader
+	call shader
 	push edi
 	call  F(glLinkProgram)
-;	call    errcheck
-  call  F(glUseProgram)
- ; call    errcheck
+;call    errcheck
+	call  F(glUseProgram)
+;call    errcheck
 	jmp shaders_end
 
 shader:
@@ -311,7 +285,7 @@ shader:
 ; lol nvidia
 		push	ebx
 		push	edi
-		call		F(glAttachShader)	; TODO: reuse ret ! (gcc does that!)
+		call	F(glAttachShader)	; TODO: reuse ret ! (gcc does that!)
 ;		call    errcheck
 ; doesn't work on some drivers (intel?)
 ;		call	F(glLinkProgram)
@@ -331,48 +305,7 @@ shader:
 	
 shaders_end:
 
-;	mov edi, esp
-;	mov	eax, shader_vtx							; 5b
-;;	lea eax, [BSSADDR(shader_vtx)]			;	6b
-;	stosd
-;	mov eax, shader_frg							; 5b
-;;	lea	eax, [BSSADDR(shader_frg)]			; 6b
-;	stosd
-;	sub edi, 8
-;	push 0x8B31; GL_VERTEX_SHADER
-;	call F(glCreateShader)
-;	push 0
-;	push edi
-;	push 1
-;	push eax
-;	call F(glShaderSource)
-;	call F(glCompileShader)
-;
-;	call F(glCreateProgram)
-;	push eax
-;	call F(glAttachShader)
-;	pop ebx
-;
-;	add edi, 4
-;	push 0x8B30; GL_FRAGMENT_SHADER
-;	call F(glCreateShader)
-;	push 0
-;	push edi
-;	push 1
-;	push eax
-;	call F(glShaderSource)
-;	call F(glCompileShader)
-;	push ebx
-;	call F(glAttachShader)
-;	call F(glLinkProgram)
-;	call F(glUseProgram)
-
 	; edi == program
-
-	push var_t
-	push edi
-	call F(glGetUniformLocation)
-	push eax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
@@ -390,48 +323,12 @@ mainloop:
 	cmp byte [edx], 2
 	jz exit
 
-	call F(SDL_GetTicks)
-	; eax == time
-
-	pop ebx
-	push ebx
-	push eax
-	push ebx
-	call F(glUniform1i)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
-;;
-;	push 7	; GL_QUADS
-;	call F(glBegin)
-;
-;	mov		eax, 0x3f800000
-;	mov		ebx, 0xbf800000
-;	push	ebx
-;	push	eax
-;	push	eax
-;	push	ebx
-;	push	ebx
-;
-; goode compressione <i>!!</i>
-;	call	F(glVertex2f)
-;	pop		edx
-;	call	F(glVertex2f)
-;	pop		edx
-;	call	F(glVertex2f)
-;	pop		edx
-;	call 	F(glVertex2f)
-;	pop		edx
-;
-;	call F(glEnd)
-;	add esp, 4*4
-;;
+	call F(SDL_GetTicks)
+	; eax == time
 
-	xor		eax, eax
-	dec		eax
-
-;	call	F(SDL_GetTicks)
 	mov		ebx, eax
 	sub		ebx, eax
 	sub		ebx, eax
@@ -440,7 +337,7 @@ mainloop:
 	push	eax
 	push	eax
 	call 	F(glRecti)
-	add		esp, 6*4
+	add		esp, 4*4
 
 ;; END OF THE RABOTA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -473,37 +370,6 @@ snd_loop:
 	pop		ebp
 	ret
 
-; OLDPLAY:
-;	push ebp
-;	push esi
-;	push edi
-;	mov ebp, bss_begin
-;	mov edi, [esp+20]
-;	mov ecx, [esp+24]
-;	shr ecx, 1
-;	lea	esi, [BSSADDR(snd_samples_count)]
-;	mov edx, [esi]
-;	push edx
-;	add edx, ecx
-;	cmp	edx, snd_samples_total
-;	jle	snd_update_counter
-
-;	; в конце звука симулируем выход через нажатие клавиши (unsafe! может не сработать!)
-;	lea edx, [BSSADDR(SDL_Event)]
-;	mov byte [edx], 2
-;	jmp snd_copy_samples
-
-;snd_update_counter:
-;	mov	[esi], edx
-;snd_copy_samples:
-;	pop edx
-;	lea esi, [esi+edx*2+4]
-;	rep movsw
-;	pop edi
-;	pop esi
-;	pop ebp
-;	ret
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; RUN AWAY! TO THE HELICOPTER!
 
@@ -519,48 +385,24 @@ exit:
 ;;;;;
 
 shader_vtx:
-db 'varying vec4 p;'
-db 'void main(){p=gl_Position=gl_Vertex;}'
+db 'varying vec4 p;varying float f;'
+db 'void main(){p=gl_Position=gl_Vertex;f=length(p.xy)/5000.;}'
 db 0
+
 shader_frg:
-	db 	'uniform int t;varying vec4 p;'
+	db 	'varying vec4 p;varying float f;'
 	db 	'void main(){'
-; кривости
-;	db	'float f=float(t)/300.;'
-;	db  'float l=length(p);'
-;	db	'float a=4.*atan(p.y/p.x);'
-;	db	'float b=sin(l*20.)+f;'
-;	db	'gl_FragColor=vec4(sin(a+b*3.),sin(2.*a-b*3.),sin(3.*a+b*2.),0.);'
-; пропеллер
-;	db	'float a,f;'
-;	db	'a=4.*atan(p.y/p.x);'
-;	db	'f=float(t)/200.;'
-;	db	'gl_FragColor=vec4(sin(a+f),sin(2.*a-f),0.,0.);'
-; плазма
-	db	'float c,f=float(t)/5000.;'
 	db	'vec2 s1,s2;'
 	db	's1=4.*vec2(sin(-f),cos(-f));'
 	db	's2=7.*vec2(sin(f*3.),cos(f*3.));'
-	db	'c=sin(3.*p.x+s1.x)*sin(4.*p.y+s1.y)'
+	db	'float c=sin(3.*p.x+s1.x)*sin(4.*p.y+s1.y)'
 	db	'+sin(7.*p.x+s2.x)*sin(2.*p.y+s2.y);'
 	db	'gl_FragColor='
-;vec4(c/4.+.5,c,-c/2.-1.,0.);';c,clamp(c,-1.,0.)+1.,clamp(c,-1.,1.)-1.,0.)*length(p);'
-	
-; somewhat good
-	db	'vec4(c+sqrt(-c/2.-1.),c/4.+.5,log2(c)+exp(c),0.);'
-
-; also
-;	db	'vec4(c/4.+.5,.8+log2(-c)+c/2.,.1/c+exp(-c/2.-1.),0.);'
+	db	'vec4(c*c,c/5.+.3,log2(c)+exp(c),0.);'
 	db	'}'
 	db 	0
 var_t:
 db 't', 0
-
-;vtx_bg_quad:
-;dd 0xbf800000, 0xbf800000
-;dd 0xbf800000, 0x3f800000
-;dd 0x3f800000, 0x3f800000
-;dd 0x3f800000, 0xbf800000
 
 ; END of known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -590,15 +432,7 @@ db  'glCreateProgram', 0
 db  'glAttachShader', 0
 db  'glLinkProgram', 0
 db  'glUseProgram', 0
-db	'glGetUniformLocation', 0
-db	'glUniform1i', 0
 db	'glRecti', 0
-;db	'glInterleavedArrays', 0
-;db	'glDrawArrays', 0
-;db	'glGetError', 0
-;db	'glBegin', 0
-;db	'glVertex2f', 0
-;db	'glEnd', 0
 db	0, 0
 
 ;snd_score:
@@ -612,9 +446,11 @@ SDL_AudioSpec:
 	dd snd_play
 
 file_size equ	($-$$)
-;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; .bss
-;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ABSOLUTE $
 
 bss_begin:
@@ -641,27 +477,11 @@ glCreateProgram: resd 1
 glAttachShader: resd 1
 glLinkProgram: resd 1
 glUseProgram: resd 1
-glGetUniformLocation: resd 1
-glUniform1i: resd 1
 glRecti: resd 1
-;glInterleavedArrays: resd 1
-;glDrawArrays: resd 1
-;glGetError: resd 1
-;glBegin: resd 1
-;glVertex2f: resd 1
-;glEnd: resd 1
 
 SDL_Event: resb 24
 
 snd_data:
 snd_reg_state: resb 108
-
-;snd_osc_phase_delta: resd 1
-;snd_osc_phase: resd 1
-;
-;snd_samples_total equ 44100*LENGTH
-;snd_samples_count: resd 1
-;snd_samples:
-;	resw snd_samples_total+44100 ; подушка безопасности
 
 mem_size equ ($-$$)
