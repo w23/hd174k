@@ -312,6 +312,8 @@ shaders_end:
 ;	f2xm1	;	~= 2^7 - 1 = 127
 	push	dword 5000
 	fild	dword [esp]
+	sub		esp, 108
+	fnsave	[esp]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
@@ -335,6 +337,7 @@ mainloop:
 	call F(SDL_GetTicks)
 	; eax == time
 
+	frstor	[esp]
 	mov		[ebp], eax
 	fild	dword [ebp]
 	fadd	st1
@@ -343,13 +346,14 @@ mainloop:
 	mov		eax, [ebp]
 	fchs
 	fstp	dword [ebp]
-    mov		ebx, [ebp]
+	mov		ebx, [ebp]
 	push 	ebx
 	push	ebx
 	push	eax
 	push	eax
 	call 	F(glRectf)
 	add		esp, 4*4
+	fnsave	[esp]
 
 ;; END OF THE RABOTA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
