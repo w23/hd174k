@@ -385,24 +385,30 @@ exit:
 ;;;;;
 
 shader_vtx:
-db 'varying vec4 p;varying float f;'
-db 'void main(){p=gl_Position=gl_Vertex;f=length(p.xy)/5000.;}'
-db 0
+	db	'varying vec4 p;'
+	db	'void main(){p=gl_Position=gl_Vertex;p.z=length(p.xy)/5000.;'
+;db	'p.x=clamp(p.x,-1.,1.);'
+;db	'p.y=clamp(p.y,-1.,1.);'
+	db	'}'
+	db 0
 
 shader_frg:
-	db 	'varying vec4 p;varying float f;'
-	db 	'void main(){'
-	db	'vec2 s1,s2;'
-	db	's1=4.*vec2(sin(-f),cos(-f));'
-	db	's2=7.*vec2(sin(f*3.),cos(f*3.));'
-	db	'float c=sin(3.*p.x+s1.x)*sin(4.*p.y+s1.y)'
-	db	'+sin(7.*p.x+s2.x)*sin(2.*p.y+s2.y);'
+	db	'varying vec4 p;'
+	db	'void main(){'
+;	db	'gl_FragColor=vec4(p.x);}', 0
+
+	db	'float c,f=p.z;'
+	db	'vec2 v,h;'
+	db	'v=4.*vec2(sin(-f),cos(-f));'
+	db	'h=7.*vec2(sin(f*3.),cos(f*3.));'
+	db	'c=sin(3.*p.x+v.x)*sin(4.*p.y+v.y)'
+	db	'+sin(7.*p.x+h.x)*sin(2.*p.y+h.y);'
 	db	'gl_FragColor='
 	db	'vec4(c*c,c/5.+.3,log2(c)+exp(c),0.);'
 	db	'}'
-	db 	0
-var_t:
-db 't', 0
+	db	0
+;var_t:
+;	db	't', 0
 
 ; END of known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -412,28 +418,28 @@ db 't', 0
 ; libraries to load
 libs_to_dl:
 ;db	'libSDL-1.2.so.0', 0
-	db	'libSDL.so', 0
-db	'SDL_Init', 0
-db	'SDL_SetVideoMode', 0
-db	'SDL_PollEvent', 0
-db	'SDL_GetTicks', 0
-db	'SDL_OpenAudio', 0
-db	'SDL_PauseAudio', 0
-db	'SDL_ShowCursor', 0
-db	'SDL_GL_SwapBuffers', 0
-db	'SDL_Quit', 0
-db	0
+db	'libSDL.so', 0
+	db	'SDL_Init', 0
+	db	'SDL_SetVideoMode', 0
+	db	'SDL_PollEvent', 0
+	db	'SDL_GetTicks', 0
+	db	'SDL_OpenAudio', 0
+	db	'SDL_PauseAudio', 0
+	db	'SDL_ShowCursor', 0
+	db	'SDL_GL_SwapBuffers', 0
+	db	'SDL_Quit', 0
+	db	0
 db	'libGL.so', 0
-db	'glViewport', 0
-db	'glCreateShader', 0
-db  'glShaderSource', 0
-db  'glCompileShader', 0
-db  'glCreateProgram', 0
-db  'glAttachShader', 0
-db  'glLinkProgram', 0
-db  'glUseProgram', 0
-db	'glRecti', 0
-db	0, 0
+	db	'glViewport', 0
+	db	'glCreateShader', 0
+	db  'glShaderSource', 0
+	db  'glCompileShader', 0
+	db  'glCreateProgram', 0
+	db  'glAttachShader', 0
+	db  'glLinkProgram', 0
+	db  'glUseProgram', 0
+	db	'glRecti', 0
+	db	0, 0
 
 ;snd_score:
 ;	db	24, 36, 48
