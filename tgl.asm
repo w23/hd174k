@@ -402,29 +402,45 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
 
-	push 7	; GL_QUADS
-	call F(glBegin)
-
-	mov		eax, 0x3f800000
-	mov		ebx, 0xbf800000
-	push	ebx
-	push	eax
-	push	eax
-	push	ebx
-	push	ebx
-
+;;
+;	push 7	; GL_QUADS
+;	call F(glBegin)
+;
+;	mov		eax, 0x3f800000
+;	mov		ebx, 0xbf800000
+;	push	ebx
+;	push	eax
+;	push	eax
+;	push	ebx
+;	push	ebx
+;
 ; goode compressione <i>!!</i>
-	call	F(glVertex2f)
-	pop		edx
-	call	F(glVertex2f)
-	pop		edx
-	call	F(glVertex2f)
-	pop		edx
-	call 	F(glVertex2f)
-	pop		edx
+;	call	F(glVertex2f)
+;	pop		edx
+;	call	F(glVertex2f)
+;	pop		edx
+;	call	F(glVertex2f)
+;	pop		edx
+;	call 	F(glVertex2f)
+;	pop		edx
+;
+;	call F(glEnd)
+;	add esp, 4*4
+;;
 
-	call F(glEnd)
-	add esp, 4*4
+	xor		eax, eax
+	dec		eax
+
+;	call	F(SDL_GetTicks)
+	mov		ebx, eax
+	sub		ebx, eax
+	sub		ebx, eax
+	push 	ebx
+	push	ebx
+	push	eax
+	push	eax
+	call 	F(glRecti)
+	add		esp, 6*4
 
 ;; END OF THE RABOTA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -576,12 +592,13 @@ db  'glLinkProgram', 0
 db  'glUseProgram', 0
 db	'glGetUniformLocation', 0
 db	'glUniform1i', 0
+db	'glRecti', 0
 ;db	'glInterleavedArrays', 0
 ;db	'glDrawArrays', 0
 ;db	'glGetError', 0
-db	'glBegin', 0
-db	'glVertex2f', 0
-db	'glEnd', 0
+;db	'glBegin', 0
+;db	'glVertex2f', 0
+;db	'glEnd', 0
 db	0, 0
 
 ;snd_score:
@@ -626,12 +643,13 @@ glLinkProgram: resd 1
 glUseProgram: resd 1
 glGetUniformLocation: resd 1
 glUniform1i: resd 1
+glRecti: resd 1
 ;glInterleavedArrays: resd 1
 ;glDrawArrays: resd 1
 ;glGetError: resd 1
-glBegin: resd 1
-glVertex2f: resd 1
-glEnd: resd 1
+;glBegin: resd 1
+;glVertex2f: resd 1
+;glEnd: resd 1
 
 SDL_Event: resb 24
 
