@@ -307,6 +307,12 @@ shaders_end:
 
 	; edi == program
 
+;	fldpi
+;	f2xm1	;	= 2^pi - 1 ~= 7
+;	f2xm1	;	~= 2^7 - 1 = 127
+	push	dword 5000
+	fild	dword [esp]
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; VECHNY CIKL LOLZ
 
@@ -329,14 +335,20 @@ mainloop:
 	call F(SDL_GetTicks)
 	; eax == time
 
-	mov		ebx, eax
-	sub		ebx, eax
-	sub		ebx, eax
+	mov		[ebp], eax
+	fild	dword [ebp]
+	fadd	st1
+	fdiv	st0, st1
+	fst		dword [ebp]
+	mov		eax, [ebp]
+	fchs
+	fstp	dword [ebp]
+    mov		ebx, [ebp]
 	push 	ebx
 	push	ebx
 	push	eax
 	push	eax
-	call 	F(glRecti)
+	call 	F(glRectf)
 	add		esp, 4*4
 
 ;; END OF THE RABOTA
@@ -386,20 +398,15 @@ exit:
 
 shader_vtx:
 	db	'varying vec4 p;'
-	db	'void main(){p=gl_Position=gl_Vertex;p.z=length(p.xy)/5000.;'
-;db	'p.x=clamp(p.x,-1.,1.);'
-;db	'p.y=clamp(p.y,-1.,1.);'
-	db	'}'
-	db 0
+	db	'void main(){p=gl_Position=gl_Vertex;p.z=length(p.xy);}'
+	db	0
 
 shader_frg:
 	db	'varying vec4 p;'
 	db	'void main(){'
-;	db	'gl_FragColor=vec4(p.x);}', 0
-
 	db	'float c,f=p.z;'
-	db	'vec2 v,h;'
-	db	'v=4.*vec2(sin(-f),cos(-f));'
+	db	'vec2 '
+	db	'v=4.*vec2(sin(-f),cos(-f)),'
 	db	'h=7.*vec2(sin(f*3.),cos(f*3.));'
 	db	'c=sin(3.*p.x+v.x)*sin(4.*p.y+v.y)'
 	db	'+sin(7.*p.x+h.x)*sin(2.*p.y+h.y);'
@@ -407,8 +414,6 @@ shader_frg:
 	db	'vec4(c*c,c/5.+.3,log2(c)+exp(c),0.);'
 	db	'}'
 	db	0
-;var_t:
-;	db	't', 0
 
 ; END of known
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,11 +443,8 @@ db	'libGL.so', 0
 	db  'glAttachShader', 0
 	db  'glLinkProgram', 0
 	db  'glUseProgram', 0
-	db	'glRecti', 0
+	db	'glRectf', 0
 	db	0, 0
-
-;snd_score:
-;	db	24, 36, 48
 
 SDL_AudioSpec:
 	dd 44100
@@ -483,7 +485,7 @@ glCreateProgram: resd 1
 glAttachShader: resd 1
 glLinkProgram: resd 1
 glUseProgram: resd 1
-glRecti: resd 1
+glRectf: resd 1
 
 SDL_Event: resb 24
 
