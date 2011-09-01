@@ -319,17 +319,6 @@ shaders_end:
 ;; VECHNY CIKL LOLZ
 
 mainloop:
-	; здесь нам надо тут необходимо проверить на SDL_Event.type == SDL_KEYDOWN и выйти, если да
-	; такая хуета:
-	; а) короче, чем push SDL_Event -- 5 байт против 4
-	; б) pop edx реально нужен, а значит не надо вводить совсем мусорный add esp, 2 (еще как минимум +2 байта было бы)
-	; в) можно сделать cmp сразу по адресу, что охуенчик!
-	lea edx, [BSSADDR(SDL_Event)]
-	push edx
-	call F(SDL_PollEvent)
-	pop edx
-	cmp byte [edx], 2
-	jz exit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; THE POLEZNAYA RABOTA
@@ -359,10 +348,25 @@ mainloop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	call [BSSADDR(SDL_GL_SwapBuffers)]
-	jmp mainloop
+
+	lea	edx, [BSSADDR(SDL_Event)]
+	push	edx
+	call	F(SDL_PollEvent)
+	pop	edx
+	cmp	byte [edx], 2
+	jnz	mainloop
 
 ;; LOOP ENDS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; RUN AWAY! TO THE HELICOPTER!
+
+	call	F(SDL_Quit)
+	xor	eax, eax
+	inc	ax
+	; xor ebx, ebx  ; couldn't care less
+	int	0x80
 
 ;;;;;;;;;;;
 ;; UADIO
@@ -385,16 +389,6 @@ snd_loop:
 	fnsave	[ebp]
 	pop		ebp
 	ret
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; RUN AWAY! TO THE HELICOPTER!
-
-exit:
-	call	F(SDL_Quit)
-	xor	eax, eax
-	inc ax
-;	xor ebx, ebx	; couldn't care less
-	int 0x80
 
 ;;;;;
 ; data
