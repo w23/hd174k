@@ -209,20 +209,24 @@ ld_second_zero:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; presynth
+;; prepare constants for teh synth
 	mov [ebp], dword 44100
-	fild  dword [ebp]
-	mov [ebp], word 440
-	fild	word [ebp]
-	mov	[ebp], word 32767
-	fild	word [ebp]				; {32767, 440, 44100, ...}
-	fld1										; {1, ...}
+	fild  dword [ebp]				; {44100;}
+	mov [ebp], word 32767
+	fild	word [ebp]				;	{32767, 44100;}
+
+; надо 2пи
+; так: 920 байт
+;	mov	[ebp], dword 0x40c90fdb ;
+;	fld	dword [ebp]
+; а так 919:
+	fld1
 	fadd	st0, st0
 	fldpi
-	fmulp										; {2pi, 32767, 440, 44100, ...}
-	fmul	st0, st2
-	fdiv	st0, st3
-	fldz										; {phase(=0), dp, 32767, 440, 44100, ...}
+	fmulp										; {2pi, 32767, 44100;}
+
+	fldz
+	fldz										; {phase(=0), dp(=0), 2pi, 32767, 44100;}
 	fnsave 	[BSSADDR(snd_reg_state)]
 
 ; lets USE something
@@ -372,22 +376,41 @@ mainloop:
 ;; UADIO
 
 snd_play:
-	push	ebp
-	mov		ebp, snd_reg_state
-	mov		eax, [esp+12]
-	mov		ecx, [esp+16]
+	mov		eax, [esp+8]
+	mov		ecx, [esp+12]
 	shr		ecx, 1
-	frstor	[ebp]		; {phase, dp, 32767, 440, 44100, ...}
+	pushad
+	mov   ebp, snd_reg_state
+	frstor  [ebp]   ; {phase, dp, 2pi, 32767, 44100;}
 snd_loop:
+	mov		ebx,	[ebp+snd_reg_size]
+	dec		ebx
+	jns		snd_proc
+
+	; update state
+	xor		ebx, ebx
+	mov		esi,	[ebp+snd_reg_size+4]
+	mov		bx,	word [snd_pattern+4*esi]
+;	shl		ebx, 10
+	fild	word [snd_pattern+4*esi+2]
+	inc		esi
+	and		esi, 7
+	mov   [ebp+snd_reg_size+4], esi
+	fmul  st0, st3
+	fdiv  st0, st5
+	fstp  st2
+
+snd_proc:
+	mov		[ebp+snd_reg_size], ebx
 	fadd	st0, st1
 	fld		st0
 	fsin
-	fmul	st0, st3
+	fmul	st0, st4
 	fistp	word [eax]
 	add		eax, byte 2
 	loop 	snd_loop
 	fnsave	[ebp]
-	pop		ebp
+	popad
 	ret
 
 ;;;;;
@@ -451,6 +474,17 @@ SDL_AudioSpec:
 	times 9 db 0
 	dd snd_play
 
+; todo: 2^(1/12) == 0x3f879c7d use that!
+snd_pattern:
+	dw	11050, 440
+	dw	 5525, 587
+	dw	 5525, 659
+	dw	11050, 784
+	dw	11050, 440
+	dw	 5525, 587
+	dw	 5525, 659
+	dw	11050, 988
+
 file_size equ	($-$$)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -488,6 +522,9 @@ glRectf: resd 1
 SDL_Event: resb 24
 
 snd_data:
-snd_reg_state: resb 108
+snd_reg_size equ 108 ; может 94 тоже охуенчик?
+snd_reg_state: resb snd_reg_size
+snd_evt_countdown: resd 1
+snd_evt_line:	resd 1
 
 mem_size equ ($-$$)
