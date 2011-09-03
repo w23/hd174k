@@ -210,21 +210,16 @@ ld_second_zero:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; prepare constants for teh synth
-	mov [ebp], dword 44100
-	fild  dword [ebp]				; {44100;}
-	mov [ebp], word 32767
-	fild	word [ebp]				;	{32767, 44100;}
 
-; надо 2пи
-; так: 920 байт
-;	mov	[ebp], dword 0x40c90fdb ;
-;	fld	dword [ebp]
-; а так 919:
-	fld1
-	fadd	st0, st0
-	fldpi
-	fmulp										; {2pi, 32767, 44100;}
+; globals
+	push	dword 44100
+	fild	dword [esp]				;	{44100;}
+	push	dword 32767
+	fild	dword [esp]				; {32767, 44100;}
+	push	dword 0x40c90fdb
+	fld	dword [esp]					; {2pi, 32767, 44100;}
 
+; частота
 	fldz
 	fldz										; {phase(=0), dp(=0), 2pi, 32767, 44100;}
 	fnsave 	[BSSADDR(snd_reg_state)]
@@ -294,7 +289,17 @@ shader:
 ; doesn't work on some drivers (intel?)
 ;		call	F(glLinkProgram)
 ;		call	F(glUseProgram)
-		add		esp, 4*8
+
+;		add		esp, 4*8
+		pop	eax
+		pop	eax
+		pop	eax
+		pop	eax
+		pop	eax
+		pop	eax
+		pop	eax
+		pop	eax
+; pops give -1 compressed byte
 		ret
 
 ;errcheck:
@@ -345,7 +350,14 @@ mainloop:
 	push	eax
 	push	eax
 	call 	F(glRectf)
-	add		esp, 4*4
+
+;add		esp, 4*4
+; vs
+	pop	eax
+	pop	eax
+	pop	eax
+	pop eax
+; pop x 4 = 1 byte less, lol
 	fnsave	[esp]
 
 ;; END OF THE RABOTA
@@ -391,7 +403,7 @@ snd_loop:
 	xor		ebx, ebx
 	mov		esi,	[ebp+snd_reg_size+4]
 	mov		bx,	word [snd_pattern+4*esi]
-;	shl		ebx, 10
+	shl		ebx, 1
 	fild	word [snd_pattern+4*esi+2]
 	inc		esi
 	and		esi, 7
