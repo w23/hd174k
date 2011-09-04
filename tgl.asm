@@ -212,16 +212,25 @@ ld_second_zero:
 ;; prepare constants for teh synth
 
 ; globals
+
+; OLD
 	push	dword 44100
 	fild	dword [esp]				;	{44100;}
-	push	dword 32767
-	fild	dword [esp]				; {32767, 44100;}
-	push	dword 0x40c90fdb
-	fld	dword [esp]					; {2pi, 32767, 44100;}
+;	push	dword 32767
+;	fild	dword [esp]				; {32767, 44100;}
+;	push	dword 0x40c90fdb	; 2pi
+;	push	dword	0x40490fdb	; pi
+;	fld	dword [esp]					; {2pi, 32767, 44100;}
+
+	fldpi
+
+; огибающая
+	fldz
+	fldz
 
 ; частота
 	fldz
-	fldz										; {phase(=0), dp(=0), 2pi, 32767, 44100;}
+	fldz										; {phase(=0), dp(=0), env(=0), de(=0), pi, rate} // was:+ 2pi, 32767, 44100;}
 	fnsave 	[BSSADDR(snd_reg_state)]
 
 ; lets USE something
@@ -393,7 +402,7 @@ snd_play:
 	shr		ecx, 1
 	pushad
 	mov   ebp, snd_reg_state
-	frstor  [ebp]   ; {phase, dp, 2pi, 32767, 44100;}
+	frstor  [ebp]   ; {phase, dp, env, de, pi, rate;} OLD: {phase, dp, 2pi, 32767, 44100;}
 snd_loop:
 	mov		ebx,	[ebp+snd_reg_size]
 	dec		ebx
@@ -404,20 +413,67 @@ snd_loop:
 	mov		esi,	[ebp+snd_reg_size+4]
 	mov		bx,	word [snd_pattern+4*esi]
 	shl		ebx, 1
+
+; update phase delta
 	fild	word [snd_pattern+4*esi+2]
-	inc		esi
-	and		esi, 7
-	mov   [ebp+snd_reg_size+4], esi
-	fmul  st0, st3
-	fdiv  st0, st5
+	fadd	st0, st0 	; * 2
+	fmul  st0, st5	;	* pi
+	fdiv  st0, st6	; / rate
 	fstp  st2
+
+; update env
+	fldz
+	fstp	st3
+	push	0x3a9b9f23
+	fld	dword [esp]
+	fstp	st4
+
+;	int 3
+
+	inc	esi
+	and	esi, 7
+	mov	[ebp+snd_reg_size+4], esi
+
+	; esi is not needed anymore here
+	pop esi
 
 snd_proc:
 	mov		[ebp+snd_reg_size], ebx
-	fadd	st0, st1
-	fld		st0
-	fsin
-	fmul	st0, st4
+
+;	fldz	;	{0, phase, dp, env, de, pi, rate;}
+
+; update env
+  fld st2
+	fadd  st4
+	fcomi	st0, st5
+	jbe	snd_env_no_overflow
+	fsub	st0, st0
+	fstp	st4
+	fldpi
+	
+snd_env_no_overflow:
+	fst	st3
+	fsin	; {envsig, phase, dp, env, de, pi, rate;}
+
+; update phase
+	fld	st1		; {phase, envsig, phase, dp, env, de, pi, rate} FULL
+	fadd	st0, st3
+	fst	st2
+	fsin	; {signal, envsig, phase, dp, env, de, pi, rate} FULL
+
+; mix signal+envelope
+	fmulp	; {mixed, phase, dp, env, de, pi, rate;}
+
+	; todo save to buffer
+	; todo delay
+
+; output
+	mov	word [eax], 32767
+	fild	word [eax]
+	fmulp
+	
+; output
+;	fmul	st0, st4
 	fistp	word [eax]
 	add		eax, byte 2
 	loop 	snd_loop
@@ -487,6 +543,8 @@ SDL_AudioSpec:
 	dd snd_play
 
 ; todo: 2^(1/12) == 0x3f879c7d use that!
+;snd_delta_env:
+;	dd	0x3a9b9f23
 snd_pattern:
 	dw	11050, 440
 	dw	 5525, 587
