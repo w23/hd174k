@@ -464,11 +464,20 @@ snd_env_no_overflow:
 ; mix signal+envelope
 	fmulp	; {mixed, phase, dp, env, de, pi, rate;}
 
-	; todo save to buffer
-	; todo delay
+; delay fx
+	lea	edi, [ebp+(snd_delay_buffer-snd_data)]
+	lea	esi, [edi+4]
+	push ecx
+	mov	ecx, snd_delay_size-1
+	fld	dword [edi]
+	fdiv	st0, st6 ; / 3.1415
+	faddp
+	rep movsd
+	fst dword [esi-4]
+	pop ecx
 
 ; output
-	mov	word [eax], 32767
+	mov	word [eax], 16383 ;32767
 	fild	word [eax]
 	fmulp
 	
@@ -476,7 +485,12 @@ snd_env_no_overflow:
 ;	fmul	st0, st4
 	fistp	word [eax]
 	add		eax, byte 2
-	loop 	snd_loop
+
+; fixme !!
+;	loop snd_loop
+	dec ecx
+	jnz	snd_loop
+
 	fnsave	[ebp]
 	popad
 	ret
@@ -591,10 +605,15 @@ glRectf: resd 1
 
 SDL_Event: resb 24
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 snd_data:
+
 snd_reg_size equ 108 ; может 94 тоже охуенчик?
 snd_reg_state: resb snd_reg_size
-snd_evt_countdown: resd 1
+snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
+
+snd_delay_size	equ 16575
+snd_delay_buffer:	resd snd_delay_size
 
 mem_size equ ($-$$)

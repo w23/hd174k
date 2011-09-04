@@ -29,6 +29,6 @@ $(PROD).gz: $(PROD).elf
 	7z a -tGZip -mx=9 $(PROD).gz $(PROD).elf
 
 $(PROD).elf: $(PROD).asm
-	nasm -Ox -f bin $(PROD).asm -o $(PROD).elf
+	nasm -f bin $(PROD).asm -o $(PROD).elf
 	chmod +x $(PROD).elf
 	wc -c $(PROD).elf
