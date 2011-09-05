@@ -214,23 +214,23 @@ ld_second_zero:
 ; globals
 
 ; OLD
-	push	dword 44100
-	fild	dword [esp]				;	{44100;}
+;	push	dword 44100
+;	fild	dword [esp]				;	{44100;}
 ;	push	dword 32767
 ;	fild	dword [esp]				; {32767, 44100;}
 ;	push	dword 0x40c90fdb	; 2pi
 ;	push	dword	0x40490fdb	; pi
 ;	fld	dword [esp]					; {2pi, 32767, 44100;}
 
-	fldpi
-
-; огибающая
-	fldz
-	fldz
+;	fldpi
 
 ; частота
 	fldz
-	fldz										; {phase(=0), dp(=0), env(=0), de(=0), pi, rate} // was:+ 2pi, 32767, 44100;}
+	fldz
+
+; огибающая
+	fldz
+	fldz										; {env(=0), de(=0), phase(=0), dp(=0);}
 	fnsave 	[BSSADDR(snd_reg_state)]
 
 ; lets USE something
@@ -402,7 +402,7 @@ snd_play:
 	shr		ecx, 1
 	pushad
 	mov   ebp, snd_reg_state
-	frstor  [ebp]   ; {phase, dp, env, de, pi, rate;} OLD: {phase, dp, 2pi, 32767, 44100;}
+	frstor  [ebp]   ; {env, de, phase, dp;}
 snd_loop:
 	mov		ebx,	[ebp+snd_reg_size]
 	dec		ebx
@@ -414,21 +414,21 @@ snd_loop:
 	mov		bx,	word [snd_pattern+4*esi]
 	shl		ebx, 1
 
-; update phase delta
-	fild	word [snd_pattern+4*esi+2]
-	fadd	st0, st0 	; * 2
-	fmul  st0, st5	;	* pi
-	fdiv  st0, st6	; / rate
-	fstp  st2
-
 ; update env
-	fldz
-	fstp	st3
-	push	0x3a9b9f23
-	fld	dword [esp]
-	fstp	st4
+  fsub	st0, st0		; {env=0, ...}
+	push  0x3a9b9f23
+	fld dword [esp]		; {c_de, env, de, ...}
+	fstp  st2					;	{env(=0), de(=c_de), phase, dp;}
 
-;	int 3
+; update phase delta
+	push  dword 44100
+	fild	word [snd_pattern+4*esi+2]	; {freq, env, de, phase, dp;}
+	fadd	st0, st0 	; * 2		; {freq*2, ...}
+	fldpi	;	{pi, freq*2, ...}
+	fmulp	;	* pi	; {pi*freq*2, ...}
+	fild	dword [esp]	; {rate, pi*freq*2, ...}
+	fdivp						; / rate	; {2*pi*freq/rate, env, de, phase, dp;}
+	fstp  st4
 
 	inc	esi
 	and	esi, 7
@@ -436,41 +436,41 @@ snd_loop:
 
 	; esi is not needed anymore here
 	pop esi
+	pop esi
 
-snd_proc:
+snd_proc:	; fpu : {env, de, phase, dp;}
 	mov		[ebp+snd_reg_size], ebx
 
-;	fldz	;	{0, phase, dp, env, de, pi, rate;}
-
 ; update env
-  fld st2
-	fadd  st4
-	fcomi	st0, st5
-	jbe	snd_env_no_overflow
-	fsub	st0, st0
-	fstp	st4
-	fldpi
+	fadd  st1
+	fldpi	; {pi, env}
+	fcomip	st0, st1	; {env, de, phase, dp;}
+	jnc	snd_env_no_overflow	; st0<st1?
+	fsub	st0, st0	; {env(=0), de, phase, dp;}
+	fstp	st1	; {de(=0), phase, dp;}
+	fldpi	; {env(=pi), de, phase, dp;}
 	
 snd_env_no_overflow:
-	fst	st3
-	fsin	; {envsig, phase, dp, env, de, pi, rate;}
+	fld	st0
+	fsin	; {envsig, env, de, phase, dp;}
 
 ; update phase
-	fld	st1		; {phase, envsig, phase, dp, env, de, pi, rate} FULL
-	fadd	st0, st3
-	fst	st2
-	fsin	; {signal, envsig, phase, dp, env, de, pi, rate} FULL
+	fld	st3		; {phase, envsig, env, de, phase, dp;}
+	fadd	st0, st5
+	fst	st4
+	fsin	; {signal, envsig, env, de, phase, dp;}
 
 ; mix signal+envelope
-	fmulp	; {mixed, phase, dp, env, de, pi, rate;}
+	fmulp	; {mixed, env, de, phase, dp;}
 
-; delay fx
+; delay fx BROKEN? HOW COULD THAT BE?!
 	lea	edi, [ebp+(snd_delay_buffer-snd_data)]
 	lea	esi, [edi+4]
 	push ecx
 	mov	ecx, snd_delay_size-1
 	fld	dword [edi]
-	fdiv	st0, st6 ; / 3.1415
+	fldpi
+	fdivp
 	faddp
 	rep movsd
 	fst dword [esi-4]
@@ -532,8 +532,8 @@ db	'libSDL.so', 0
 	db	'SDL_PollEvent', 0
 	db	'SDL_GetTicks', 0
 	db	'SDL_OpenAudio', 0
-	db	'SDL_PauseAudio', 0
 	db	'SDL_ShowCursor', 0
+	db  'SDL_PauseAudio', 0
 	db	'SDL_GL_SwapBuffers', 0
 	db	'SDL_Quit', 0
 	db	0
