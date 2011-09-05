@@ -300,14 +300,7 @@ shader:
 ;		call	F(glUseProgram)
 
 ;		add		esp, 4*8
-		pop	eax
-		pop	eax
-		pop	eax
-		pop	eax
-		pop	eax
-		pop	eax
-		pop	eax
-		pop	eax
+	times 8		pop	eax
 ; pops give -1 compressed byte
 		ret
 
@@ -362,10 +355,7 @@ mainloop:
 
 ;add		esp, 4*4
 ; vs
-	pop	eax
-	pop	eax
-	pop	eax
-	pop eax
+	times 4 pop	eax
 ; pop x 4 = 1 byte less, lol
 	fnsave	[esp]
 
@@ -411,7 +401,7 @@ snd_loop:
 	; update state
 	xor		ebx, ebx
 	mov		esi,	[ebp+snd_reg_size+4]
-	mov		bx,	word [snd_pattern+4*esi]
+	mov		bx,	11050 ;word [snd_pattern+4*esi]
 	shl		ebx, 1
 
 ; update env
@@ -422,7 +412,7 @@ snd_loop:
 
 ; update phase delta
 	push  dword 44100
-	fild	word [snd_pattern+4*esi+2]	; {freq, env, de, phase, dp;}
+	fild	word [snd_pattern+2*esi]	; {freq, env, de, phase, dp;}
 	fadd	st0, st0 	; * 2		; {freq*2, ...}
 	fldpi	;	{pi, freq*2, ...}
 	fmulp	;	* pi	; {pi*freq*2, ...}
@@ -482,11 +472,10 @@ snd_env_no_overflow:
 	fmulp
 	
 ; output
-;	fmul	st0, st4
 	fistp	word [eax]
 	add		eax, byte 2
 
-; fixme !!
+; fixme TOO LONG !!
 ;	loop snd_loop
 	dec ecx
 	jnz	snd_loop
@@ -560,14 +549,14 @@ SDL_AudioSpec:
 ;snd_delta_env:
 ;	dd	0x3a9b9f23
 snd_pattern:
-	dw	11050, 440
-	dw	 5525, 587
-	dw	 5525, 659
-	dw	11050, 784
-	dw	11050, 440
-	dw	 5525, 587
-	dw	 5525, 659
-	dw	11050, 988
+	dw	440
+	dw	587
+	dw	659
+	dw	784
+	dw	440
+	dw	587
+	dw	659
+	dw	988
 
 file_size equ	($-$$)
 
