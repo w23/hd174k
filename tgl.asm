@@ -1,12 +1,19 @@
-; hd174k, a <s>4k</s> 854bytes intro by Ye Olde Laptops Posse
-; 	code: w23 (me@w23.ru)
+; hd174k, a 1k intro for linux by Ye Olde Laptops Posse
+; 	code (shader, synth), music: w23 (me@w23.ru)
 ; 	color model: korvin
 ;		additional help: decelas
-
+;
 ; created somewhere in the middle of august 2011
-; released 28.08.2011 @ Hackday17, Novosibirsk, Russia
-
-; PARTYVERSION, WITHOUT SOUND (is incomplete atm)
+; partyversion released 28.08.2011 @ Hackday17, Novosibirsk, Russia
+; was unfinished and didn't have any sounds
+;
+;	final version xx(06?).09.2011
+;
+;
+; yeah, plasma effect is old and lame, but we're also lame, and our laptops
+; are old enough for their GPUs not to be able to do branching in shaders.
+;
+; :(
 
 ; Params
 %define WIDTH   720
@@ -209,20 +216,7 @@ ld_second_zero:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; prepare constants for teh synth
-
-; globals
-
-; OLD
-;	push	dword 44100
-;	fild	dword [esp]				;	{44100;}
-;	push	dword 32767
-;	fild	dword [esp]				; {32767, 44100;}
-;	push	dword 0x40c90fdb	; 2pi
-;	push	dword	0x40490fdb	; pi
-;	fld	dword [esp]					; {2pi, 32767, 44100;}
-
-;	fldpi
+;; prepare state for teh synth
 
 ; частота
 	fldz
@@ -317,10 +311,6 @@ shader:
 shaders_end:
 
 	; edi == program
-
-;	fldpi
-;	f2xm1	;	= 2^pi - 1 ~= 7
-;	f2xm1	;	~= 2^7 - 1 = 127
 	push	dword 5000
 	fild	dword [esp]
 	sub		esp, 108
