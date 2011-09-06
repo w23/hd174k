@@ -26,7 +26,9 @@ $(PROD): $(PROD).gz
 	wc -c $(PROD)
 
 $(PROD).gz: $(PROD).elf
-	7z a -tGZip -mx=9 $(PROD).gz $(PROD).elf
+	cp $(PROD).elf i
+	7z a -tGZip -mx=9 $(PROD).gz i
+	rm i
 
 $(PROD).elf: $(PROD).asm
 	nasm -f bin $(PROD).asm -o $(PROD).elf
