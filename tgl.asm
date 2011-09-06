@@ -406,8 +406,8 @@ snd_loop:
 	; update state
 	xor		ebx, ebx
 	mov		esi,	[ebp+snd_reg_size+4]
-	mov		bx,	11050 ;word [snd_pattern+4*esi]
-	shl		ebx, 1
+	mov		bx,	snd_samples_step ;word [snd_pattern+4*esi]
+;	shl		ebx, 1
 
 ; update env
   fsub	st0, st0		; {env=0, ...}
@@ -423,7 +423,7 @@ snd_loop:
 	fstp  st4
 
 	inc	esi
-	and	esi, 15
+	and	esi, snd_pattern_mask
 	mov	[ebp+snd_reg_size+4], esi
 
 	; esi is not needed anymore here
@@ -456,6 +456,8 @@ snd_env_no_overflow:
 	fmulp	; {mixed, env, de, phase, dp;}
 
 ; delay fx BROKEN? HOW COULD THAT BE?!
+	bt	ecx, 0
+	jc	no_delay
 	lea	edi, [ebp+(snd_delay_buffer-snd_data)]
 	lea	esi, [edi+4]
 	push ecx
@@ -467,6 +469,7 @@ snd_env_no_overflow:
 	rep movsd
 	fst dword [esi-4]
 	pop ecx
+no_delay:
 
 ; output
 	mov	word [eax], 16383 ;32767
@@ -550,23 +553,12 @@ SDL_AudioSpec:
 ; todo: 2^(1/12) == 0x3f879c7d use that!
 ;snd_delta_env:
 ;	dd	0x3a9b9f23
+
+snd_pattern_mask equ 7
 snd_pattern:
-	dw	440
-	dw	587
-	dw	659
-	dw	784
-	dw	440
-	dw	587
-	dw	659
-	dw	988
-	dw  440
-	dw  587
-	dw  659
-	dw  784
-	dw  440
-	dw  587
-	dw  659
-	dw  988
+;	dw 440, 587, 659, 783, 880, 1046, 1174, 0
+	dw	440, 587, 659, 783, 880, 1046, 1174, 0
+	;, 880, 659, 587, 523, 493, 523, 440, 0
 
 file_size equ	($-$$)
 
@@ -614,7 +606,8 @@ snd_evt_line:	resd 1
 
 ;snd_note_freqs: resd 16 ; some octaves
 
-snd_delay_size	equ 16575
+snd_samples_step equ 4096*4
+snd_delay_size	equ 4096*3 ;16575
 snd_delay_buffer:	resd snd_delay_size
 
 mem_size equ ($-$$)
