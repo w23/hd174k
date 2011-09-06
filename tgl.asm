@@ -180,7 +180,7 @@ ld_load:
 	dec esi
 	push	1
 	push	esi
-	call	[BSSADDR(dlopen_rel)]
+	call	F(dlopen_rel)
 ;	add esp, 8   ; do we need it really? let's pollute the stack! it's FUN
 	mov ebx, eax	
 
@@ -200,7 +200,7 @@ ld_skip_to_zero:
 	dec esi
 	push esi
 	push ebx
-	call	[BSSADDR(dlsym_rel)]
+	call	F(dlsym_rel)
 	stosd
 	jmp	ld_skip_to_zero
 
@@ -217,6 +217,19 @@ ld_second_zero:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; prepare state for teh synth
+
+; prepare note frequencies table
+;	lea	edi, [BSSADDR(snd_note_freqs)]
+;	mov	ecx, 16
+;	push	0x3f879c7d	; 2^(1/12)
+;	fld	dword [esp]
+;	push	0x3d80634a	; 440 * 2*pi / 44100
+;	fld	dword [esp]
+;snd_freqgen_loop:
+;	fmul	st0, st1
+;	fst	dword [edi]
+;times 4	inc edi
+;	loop	snd_freqgen_loop
 
 ; частота
 	fldz
@@ -255,8 +268,8 @@ ld_second_zero:
 	call F(glCreateProgram)
 ;call    errcheck
 	mov edi, eax
-	xor	esi, esi
-	mov si, 0x8B31
+	push	0x8b31
+	pop esi
 	mov dword [ebp], shader_vtx
 	call shader
 	dec esi
@@ -310,7 +323,9 @@ shader:
 	
 shaders_end:
 
-	; edi == program
+	; edi == program -- don't need anymore in this 1k
+
+	; cannot do 'word 5000' because of alignment
 	push	dword 5000
 	fild	dword [esp]
 	sub		esp, 108
@@ -401,17 +416,14 @@ snd_loop:
 	fstp  st2					;	{env(=0), de(=c_de), phase, dp;}
 
 ; update phase delta
-	push  dword 44100
+	push  dword 0x39156592	; pi * 2 / 44100
+	fld	dword [esp]
 	fild	word [snd_pattern+2*esi]	; {freq, env, de, phase, dp;}
-	fadd	st0, st0 	; * 2		; {freq*2, ...}
-	fldpi	;	{pi, freq*2, ...}
-	fmulp	;	* pi	; {pi*freq*2, ...}
-	fild	dword [esp]	; {rate, pi*freq*2, ...}
-	fdivp						; / rate	; {2*pi*freq/rate, env, de, phase, dp;}
+	fmulp
 	fstp  st4
 
 	inc	esi
-	and	esi, 7
+	and	esi, 15
 	mov	[ebp+snd_reg_size+4], esi
 
 	; esi is not needed anymore here
@@ -547,6 +559,14 @@ snd_pattern:
 	dw	587
 	dw	659
 	dw	988
+	dw  440
+	dw  587
+	dw  659
+	dw  784
+	dw  440
+	dw  587
+	dw  659
+	dw  988
 
 file_size equ	($-$$)
 
@@ -568,8 +588,8 @@ SDL_SetVideoMode: resd 1
 SDL_PollEvent: resd 1
 SDL_GetTicks: resd 1
 SDL_OpenAudio: resd 1
-SDL_PauseAudio: resd 1
 SDL_ShowCursor: resd 1
+SDL_PauseAudio: resd 1
 SDL_GL_SwapBuffers: resd 1
 SDL_Quit: resd 1
 glViewport: resd 1
@@ -591,6 +611,8 @@ snd_reg_size equ 108 ; может 94 тоже охуенчик?
 snd_reg_state: resb snd_reg_size
 snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
+
+;snd_note_freqs: resd 16 ; some octaves
 
 snd_delay_size	equ 16575
 snd_delay_buffer:	resd snd_delay_size
