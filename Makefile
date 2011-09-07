@@ -21,14 +21,13 @@ debug: $(PROD)
 
 $(PROD): $(PROD).gz
 	echo "T=/tmp/i;tail -n+2 \$$0|zcat>\$$T;chmod +x \$$T;\$$T;rm \$$T;exit" > $(PROD)
-	cat $(PROD).gz >> $(PROD)
+	echo -ne "\x1f\x8b\x08\x001337" >> $(PROD)
+	tail -c +9 $(PROD).gz >> $(PROD)
 	chmod +x $(PROD)
 	wc -c $(PROD)
 
 $(PROD).gz: $(PROD).elf
-	cp $(PROD).elf i
-	7z a -tGZip -mx=9 $(PROD).gz i
-	rm i
+	cat $(PROD).elf | 7z a dummy -tGZip -mx=9 -si -so > $(PROD).gz
 
 $(PROD).elf: $(PROD).asm
 	nasm -f bin $(PROD).asm -o $(PROD).elf
