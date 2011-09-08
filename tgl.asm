@@ -451,6 +451,12 @@ snd_env_no_overflow:
 	fadd	st0, st5
 	fst	st4
 	fsin	; {signal, envsig, env, de, phase, dp;}
+	fld
+	fld
+	fabs
+	fsqrt
+	fmulp
+	fdivp
 
 ; mix signal+envelope
 	fmulp	; {mixed, env, de, phase, dp;}
