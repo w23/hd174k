@@ -443,19 +443,18 @@ snd_proc:	; fpu : {env, de, phase, dp;}
 	fldpi	; {env(=pi), de, phase, dp;}
 	
 snd_env_no_overflow:
-	fld	st0
-	fsin	; {envsig, env, de, phase, dp;}
+;	fld	st0
+;	fsin	; {envsig, env, de, phase, dp;}
+	fld1
 
 ; update phase
 	fld	st3		; {phase, envsig, env, de, phase, dp;}
 	fadd	st0, st5
 	fst	st4
 	fsin	; {signal, envsig, env, de, phase, dp;}
-	fld
-	fld
+	fld st0
 	fabs
 	fsqrt
-	fmulp
 	fdivp
 
 ; mix signal+envelope
