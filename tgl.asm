@@ -176,6 +176,11 @@ _start:
 ;	TODO: push/call участки можно как-нибудь объединить наверняка,
 ; 	тем самым удавив это все еще байт на 10
 
+;fldl2t	; ~3.32
+;fldl2e	; ~1.44
+;fldlg2	; ~0.30
+;fldln2	; ~0.69
+
 ld_load:
 	dec esi
 	push	1
@@ -443,9 +448,11 @@ snd_proc:	; fpu : {env, de, phase, dp;}
 	fldpi	; {env(=pi), de, phase, dp;}
 	
 snd_env_no_overflow:
-;	fld	st0
-;	fsin	; {envsig, env, de, phase, dp;}
-	fld1
+	fld	st0
+	fsin	; {envsig, env, de, phase, dp;}
+	fldlg2
+	faddp
+;	fld1
 
 ; update phase
 	fld	st3		; {phase, envsig, env, de, phase, dp;}
@@ -468,7 +475,8 @@ snd_env_no_overflow:
 	push ecx
 	mov	ecx, snd_delay_size-1
 	fld	dword [edi]
-	fldpi
+	;fldpi
+	fldl2e
 	fdivp
 	faddp
 	rep movsd
@@ -477,7 +485,7 @@ snd_env_no_overflow:
 no_delay:
 
 ; output
-	mov	word [eax], 16383 ;32767
+	mov	word [eax], 10000 ;16383 ;32767
 	fild	word [eax]
 	fmulp
 	
