@@ -391,12 +391,17 @@ snd_loop:
 ;	shl		ebx, 1
 
 ; update env
-  fsub	st0, st0		; {env=0, ...}
-	push  0x3a9b9f23
+;  fsub	st0, st0		; {env=0, ...}
+;	fdiv	st0, st0		; {env=1, ...}
+	fld1
+	fstp	st1
+;	push  0x3a9b9f23	; attack or something
+	push	0xb91e83d0	; decay from 1 to 0 in 100ms
 	fld dword [esp]		; {c_de, env, de, ...}
 	fstp  st2					;	{env(=0), de(=c_de), phase, dp;}
 
-	push	0x3d80634a	; 440 * 2*pi / 44100
+	;push	0x3d00634a	; 440 * pi / 44100
+	push	0x3d21c232
 	fld	dword [esp]
 	push	0x3f879c7d	; 2^(1/12)
 	mov dl, byte [snd_pattern+esi]
@@ -418,18 +423,23 @@ snd_proc:	; fpu : {env, de, phase, dp;}
 
 ; update env
 	fadd  st1
-	fldpi	; {pi, env}
+;	fldpi	; {pi, env}
+	fldz
 	fcomip	st0, st1	; {env, de, phase, dp;}
-	jnc	snd_env_no_overflow	; st0<st1?
+;	;jnc	snd_env_no_overflow	; st0<st1?
+	jc	snd_env_no_overflow ; st0>st1?
+
 	fsub	st0, st0	; {env(=0), de, phase, dp;}
-	fstp	st1	; {de(=0), phase, dp;}
-	fldpi	; {env(=pi), de, phase, dp;}
+;	fstp	st1	; {de(=0), phase, dp;}
+;	fldpi	; {env(=pi), de, phase, dp;}
+	fst	st1
 	
 snd_env_no_overflow:
 	fldlg2
-	fld	st1
-	fsin	; {envsig, env, de, phase, dp;}
-	faddp
+	fadd	st0, st1
+;	fld	st0
+;	fsin	; {envsig, env, de, phase, dp;}
+;	faddp
 ;	fld1
 
 ; update phase
@@ -439,7 +449,7 @@ snd_env_no_overflow:
 	fsin	; {signal, envsig, env, de, phase, dp;}
 	fld st0
 	fabs
-;times 2
+;times 2 fsqrt
 	fsqrt
 	fdivp
 
@@ -604,7 +614,8 @@ snd_evt_line:	resd 1
 ;snd_mtof_table_size equ 32
 ;snd_mtof_table: resd snd_mtof_table_size
 
-snd_delay_size_mask equ 32767 ; 16383
+;snd_delay_size_mask equ 32767
+snd_delay_size_mask equ 16383
 snd_samples_step equ snd_delay_size*2/3
 snd_delay_size	equ (snd_delay_size_mask+1)
 snd_delay_shift: resd 1
