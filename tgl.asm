@@ -467,25 +467,23 @@ snd_env_no_overflow:
 ; mix signal+envelope
 	fmulp	; {mixed, env, de, phase, dp;}
 
-; delay fx BROKEN? HOW COULD THAT BE?!
-	bt	ecx, 0
-	jc	no_delay
+; delay fx
 	lea	edi, [ebp+(snd_delay_buffer-snd_data)]
-	lea	esi, [edi+4]
-	push ecx
-	mov	ecx, snd_delay_size-1
-	fld	dword [edi]
-	;fldpi
+	mov esi, [edi]
+times 4 inc edi
+	fld dword [edi+esi*4]
 	fldl2e
 	fdivp
 	faddp
-	rep movsd
-	fst dword [esi-4]
-	pop ecx
-no_delay:
+	dec	esi
+	and	esi, snd_delay_size_mask
+	fst dword [edi+esi*4]
+times 2	inc esi
+	and esi, snd_delay_size_mask
+	mov [edi-4], esi
 
 ; output
-	mov	word [eax], 10000 ;16383 ;32767
+	mov	word [eax], 8192 ; 32767 for full range (will clip agressively a lot)
 	fild	word [eax]
 	fmulp
 	
@@ -617,10 +615,11 @@ snd_reg_state: resb snd_reg_size
 snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
 
-;snd_note_freqs: resd 16 ; some octaves
 
-snd_samples_step equ 4096*4
-snd_delay_size	equ 4096*3 ;16575
+snd_delay_size_mask equ 16383
+snd_samples_step equ snd_delay_size*4/3
+snd_delay_size	equ (snd_delay_size_mask+1)
+snd_delay_shift: resd 1
 snd_delay_buffer:	resd snd_delay_size
 
 mem_size equ ($-$$)
