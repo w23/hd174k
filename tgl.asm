@@ -307,7 +307,7 @@ shaders_end:
 	; edi == program -- don't need anymore in this 1k
 
 	; cannot do 'word 5000' because of alignment
-	push	dword 8192
+	push	dword 4096
 	fild	dword [esp]
 	sub		esp, 108
 	fnsave	[esp]
@@ -437,10 +437,11 @@ snd_env_no_overflow:
 	fadd	st0, st5
 	fst	st4
 	fsin	; {signal, envsig, env, de, phase, dp;}
-;	fld st0
-;	fabs
-;	fsqrt
-;	fdivp
+	fld st0
+	fabs
+;times 2
+	fsqrt
+	fdivp
 
 ; mix signal+envelope
 	fmulp	; {mixed, env, de, phase, dp;}
@@ -450,7 +451,8 @@ snd_env_no_overflow:
 	mov esi, [edi]
 times 4 inc edi
 	fld dword [edi+esi*4]
-	fldl2e
+;	fldl2e
+	fldpi
 	fdivp
 	faddp
 	dec	esi
@@ -545,8 +547,8 @@ db	'libGL.so', 0
 
 snd_pattern_mask equ 15
 snd_pattern:
-	db 1,  6,  8, 13, 15, 20, 22, 13
-	db 1,  3,  5,  6,  8, 10, 12, 13
+	db	1, 6, 8, 11, 13, 11,  8, 6
+	db	1, 6, 8, 11, 13,  8, 15, 6
 
 SDL_AudioSpec:
 	dd 44100
@@ -603,7 +605,7 @@ snd_evt_line:	resd 1
 ;snd_mtof_table: resd snd_mtof_table_size
 
 snd_delay_size_mask equ 32767 ; 16383
-snd_samples_step equ snd_delay_size*4/3
+snd_samples_step equ snd_delay_size*2/3
 snd_delay_size	equ (snd_delay_size_mask+1)
 snd_delay_shift: resd 1
 snd_delay_buffer:	resd snd_delay_size
