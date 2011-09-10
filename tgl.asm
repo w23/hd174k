@@ -1,13 +1,14 @@
 ; hd174k, a 1k intro for linux by Ye Olde Laptops Posse
-; 	code (shader, synth), music: w23 (me@w23.ru)
+; 	code (init, shader, synth), "music": w23 (me@w23.ru)
 ; 	color model: korvin
 ;		additional help: decelas
 ;
 ; created somewhere in the middle of august 2011
-; partyversion released 28.08.2011 @ Hackday17, Novosibirsk, Russia
-; was unfinished and didn't have any sounds
+; "partyversion" released 28.08.2011 @ Hackday17*, Novosibirsk, Russia
+; was unfinished and didn't have any audio
+; * - Hackday is not a demoscene event. :(
 ;
-;	final version xx(06?).09.2011
+;	final version 10.09.2011
 ;
 ;
 ; yeah, plasma effect is old and lame, but we're also lame, and our laptops
@@ -93,11 +94,8 @@ dd 1
 
 ; oh data
 
-interp:	db	'/lib/ld-linux.so.2', 0
-interp_size equ $ - interp
-
-dynamic_unpadded:
-times (4 - (($$-$) % 4)) db 0x23
+;dynamic_unpadded:
+;times (4 - (($$-$) % 4)) db 0x23
 dynamic:
 	dd 	1,	libdl_name	; DT_NEEDED
 ;	dd	1,	libSDL_name	; DT_NEEDED
@@ -130,15 +128,6 @@ hash:
 dd 1, 3	; buckets, chains
 dd 2
 dd 0, 0, 1	; ???
-
-strtab:
-	libdl_name equ $ - strtab
-	db 	'libdl.so.2', 0
-	dlopen_name equ $ - strtab
-	db 	'dlopen', 0
-	dlsym_name equ $ - strtab
-	db 	'dlsym', 0	
-	strtab_size equ $ - strtab
 
 reltext:
 	dd	dlopen_rel
@@ -459,10 +448,10 @@ snd_env_no_overflow:
 	fadd	st0, st5
 	fst	st4
 	fsin	; {signal, envsig, env, de, phase, dp;}
-	fld st0
-	fabs
-	fsqrt
-	fdivp
+;	fld st0
+;	fabs
+;	fsqrt
+;	fdivp
 
 ; mix signal+envelope
 	fmulp	; {mixed, env, de, phase, dp;}
@@ -527,6 +516,17 @@ shader_frg:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; more technical bootstrapping stuff
+interp:	db	'/lib/ld-linux.so.2', 0
+interp_size equ $ - interp
+
+strtab:
+	libdl_name equ $ - strtab
+	db 	'libdl.so.2', 0
+	dlopen_name equ $ - strtab
+	db 	'dlopen', 0
+	dlsym_name equ $ - strtab
+	db 	'dlsym', 0	
+	strtab_size equ $ - strtab
 
 ; libraries to load
 libs_to_dl:
@@ -569,7 +569,7 @@ snd_pattern_mask equ 7
 snd_pattern:
 	dw 440, 587, 659, 783, 880, 1046, 1174, 0 ;659
 ;	dw	440/2, 587/2, 659/2, 783/2, 880/2, 1046/2, 1174/2, 659/2
-	;, 880, 659, 587, 523, 493, 523, 440, 0
+;	dw 880, 659, 587, 523, 493, 523, 440, 0
 
 file_size equ	($-$$)
 
@@ -616,7 +616,7 @@ snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
 
 
-snd_delay_size_mask equ 16383
+snd_delay_size_mask equ 32767 ; 16383
 snd_samples_step equ snd_delay_size*4/3
 snd_delay_size	equ (snd_delay_size_mask+1)
 snd_delay_shift: resd 1
