@@ -212,19 +212,6 @@ ld_second_zero:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; prepare state for teh synth
 
-; prepare note frequencies table
-;	lea	edi, [BSSADDR(snd_note_freqs)]
-;	mov	ecx, 16
-;	push	0x3f879c7d	; 2^(1/12)
-;	fld	dword [esp]
-;	push	0x3d80634a	; 440 * 2*pi / 44100
-;	fld	dword [esp]
-;snd_freqgen_loop:
-;	fmul	st0, st1
-;	fst	dword [edi]
-;times 4	inc edi
-;	loop	snd_freqgen_loop
-
 ; частота
 	fldz
 	fldz
@@ -320,7 +307,7 @@ shaders_end:
 	; edi == program -- don't need anymore in this 1k
 
 	; cannot do 'word 5000' because of alignment
-	push	dword 5000
+	push	dword 8192
 	fild	dword [esp]
 	sub		esp, 108
 	fnsave	[esp]
@@ -409,20 +396,22 @@ snd_loop:
 	fld dword [esp]		; {c_de, env, de, ...}
 	fstp  st2					;	{env(=0), de(=c_de), phase, dp;}
 
-; update phase delta
-	push  dword 0x39156592	; pi * 2 / 44100
+	push	0x3d80634a	; 440 * 2*pi / 44100
 	fld	dword [esp]
-	fild	word [snd_pattern+2*esi]	; {freq, env, de, phase, dp;}
+	push	0x3f879c7d	; 2^(1/12)
+	mov dl, byte [snd_pattern+esi]
+snd_freqgen_loop:
+	fld	dword [esp]
 	fmulp
+	dec dl
+jnz snd_freqgen_loop
 	fstp  st4
-
 	inc	esi
 	and	esi, snd_pattern_mask
 	mov	[ebp+snd_reg_size+4], esi
 
-	; esi is not needed anymore here
-	pop esi
-	pop esi
+	; esi is not needed here anymore
+	times 3 pop esi
 
 snd_proc:	; fpu : {env, de, phase, dp;}
 	mov		[ebp+snd_reg_size], ebx
@@ -437,9 +426,9 @@ snd_proc:	; fpu : {env, de, phase, dp;}
 	fldpi	; {env(=pi), de, phase, dp;}
 	
 snd_env_no_overflow:
-	fld	st0
-	fsin	; {envsig, env, de, phase, dp;}
 	fldlg2
+	fld	st1
+	fsin	; {envsig, env, de, phase, dp;}
 	faddp
 ;	fld1
 
@@ -554,22 +543,17 @@ db	'libGL.so', 0
 	db	'glRectf', 0
 	db	0, 0
 
+snd_pattern_mask equ 15
+snd_pattern:
+	db 1,  6,  8, 13, 15, 20, 22, 13
+	db 1,  3,  5,  6,  8, 10, 12, 13
+
 SDL_AudioSpec:
 	dd 44100
 	dw 0x8010			; S16SYS
 	db 1					; channels
 	times 9 db 0
 	dd snd_play
-
-; todo: 2^(1/12) == 0x3f879c7d use that!
-;snd_delta_env:
-;	dd	0x3a9b9f23
-
-snd_pattern_mask equ 7
-snd_pattern:
-	dw 440, 587, 659, 783, 880, 1046, 1174, 0 ;659
-;	dw	440/2, 587/2, 659/2, 783/2, 880/2, 1046/2, 1174/2, 659/2
-;	dw 880, 659, 587, 523, 493, 523, 440, 0
 
 file_size equ	($-$$)
 
@@ -615,6 +599,8 @@ snd_reg_state: resb snd_reg_size
 snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
 
+;snd_mtof_table_size equ 32
+;snd_mtof_table: resd snd_mtof_table_size
 
 snd_delay_size_mask equ 32767 ; 16383
 snd_samples_step equ snd_delay_size*4/3
