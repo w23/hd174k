@@ -1,27 +1,27 @@
-; hd174k, a 1k intro for linux by Ye Olde Laptops Posse
-; 	code (init, shader, synth), "music": w23 (me@w23.ru)
-; 	color model: korvin
-;		additional help: decelas
+;うろつき, a 1k intro for linux by Ye Olde Laptops Posse
+;	code: w23 (me@w23.ru)
+;	palette model: korvin
+;	additional testing: decelas
 ;
-; created somewhere in the middle of august 2011
-; "partyversion" released 28.08.2011 @ Hackday17*, Novosibirsk, Russia
-; was unfinished and didn't have any audio
-; * - Hackday is not a demoscene event. :(
+; compile with make, more info @ Makefile
 ;
-;	final version 10.09.2011
-;
-;
-; yeah, plasma effect is old and lame, but we're also lame, and our laptops
-; are old enough for their GPUs not to be able to do branching in shaders.
-;
-; :(
+; 11.09.2011
 
 ; Params
 %define WIDTH   720
 %define HEIGHT  480
-%define LENGTH  120
+%define FULLSCREEN 0
+
+;%define	WIDTH	1920
+;%define	HEIGHT	1080
 ;%define	FULLSCREEN	0x80000000
-%define FULLSCREEN	0
+
+;%define	WIDTH	1600
+;%define	HEIGHT	1200
+
+;%define	WIDTH	1280
+;%define	HEIGHT	720
+;%define	FULLSCREEN	0x80000000
 
 ; Useful!
 %define BSSADDR(a) ebp + ((a) - bss_begin)
@@ -385,10 +385,8 @@ snd_loop:
 	jns		snd_proc
 
 	; update state
-	xor		ebx, ebx
 	mov		esi,	[ebp+snd_reg_size+4]
-	mov		bx,	snd_samples_step ;word [snd_pattern+4*esi]
-;	shl		ebx, 1
+	mov		ebx,	snd_samples_step
 
 ; update env
 ;  fsub	st0, st0		; {env=0, ...}
@@ -437,7 +435,9 @@ snd_proc:	; fpu : {env, de, phase, dp;}
 snd_env_no_overflow:
 	fldlg2
 	fadd	st0, st1
-;	fld	st0
+
+	;fld	st0
+
 ;	fsin	; {envsig, env, de, phase, dp;}
 ;	faddp
 ;	fld1
@@ -606,13 +606,10 @@ SDL_Event: resb 24
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 snd_data:
 
-snd_reg_size equ 108 ; может 94 тоже охуенчик?
+snd_reg_size equ 108
 snd_reg_state: resb snd_reg_size
 snd_evt_countdown:	resd 1
 snd_evt_line:	resd 1
-
-;snd_mtof_table_size equ 32
-;snd_mtof_table: resd snd_mtof_table_size
 
 ;snd_delay_size_mask equ 32767
 snd_delay_size_mask equ 16383
