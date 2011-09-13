@@ -90,7 +90,7 @@ dd interp
 dd interp_size
 dd interp_size
 dd 4
-dd 1
+;dd 1	;OVERLAPS
 
 ; oh data
 
@@ -98,16 +98,16 @@ dd 1
 ;times (4 - (($$-$) % 4)) db 0x23
 dynamic:
 	dd 	1,	libdl_name	; DT_NEEDED
-;	dd	1,	libSDL_name	; DT_NEEDED
-;	dd	1,	libGL_name	; DT_NEEDED
-dd 4,	hash	; DT_HASH
-dd 5,	strtab	; DT_STRTAB
-dd 6,	symtab	; DT_SYMTAB
-dd 10, strtab_size	; DT_STRSZ
-dd 11, symtab_size	;	DT_SYMENT
-dd 17, reltext		;	DT_REL
-dd 18, reltext_size		;	DT_RELSZ
-dd 19, 8	;	DT_RELENT
+	dd	1,	libSDL_name	; DT_NEEDED
+	dd	1,	libGL_name	; DT_NEEDED
+	dd 	4,	hash		; DT_HASH
+	dd 	5,	strtab		; DT_STRTAB
+	dd 	6,	symtab		; DT_SYMTAB
+	dd 	10, 	strtab_size	; DT_STRSZ
+	dd 	11, 	symtab_size	; DT_SYMENT
+	dd 	17, 	reltext		; DT_REL
+	dd 	18, 	reltext_size	; DT_RELSZ
+	dd 	19, 	8		; DT_RELENT
 symtab:	; overlaps
 dd 0, 0	; DT_NULL - end of .dynamic section
 dynamic_size equ $ - dynamic 
@@ -116,18 +116,20 @@ dynamic_size equ $ - dynamic
 dd 0
 dw 0, 0		; SHN_UNDEF
 dd dlopen_name, 0, 0
-dw 0x12, 0		; { 19, 0, 0, ELF32_ST_INFO(STB_GLOBAL, STT_FUNC), STV_DEFAULT, SHN_UNDEF },
+dw 0x12, 0		; { 12, 0, 0, ELF32_ST_INFO(STB_GLOBAL, STT_FUNC), STV_DEFAULT, SHN_UNDEF },
 dd dlsym_name, 0, 0
 dw 0x12, 0		; { 12, 0, 0, ELF32_ST_INFO(STB_GLOBAL, STT_FUNC), STV_DEFAULT, SHN_UNDEF
+
 ; symtab_count equ 3
 symtab_size equ $ - symtab
 
 ; copied from gcc+ld-generated executable
 ; don't really get the meaning
-hash:
-dd 1, 3	; buckets, chains
-dd 2
-dd 0, 0, 1	; ???
+hash:	dd 1, 3, 0, 0, 0, 0
+;dd 1, 3	; buckets, chains
+;dd 2
+;dd 0, 0, 1	; ???
+;OR times 4 dd 0
 
 reltext:
 	dd	dlopen_rel
@@ -135,6 +137,8 @@ reltext:
 	dd	dlsym_rel
 	db	1, 2, 0, 0
 reltext_size equ $ - reltext
+
+;hash:	dd	1, 3, 0, 0, 0, 0
 
 ;;;;;
 ; program
@@ -531,8 +535,9 @@ strtab:
 
 ; libraries to load
 libs_to_dl:
-;db	'libSDL-1.2.so.0', 0
-db	'libSDL.so', 0
+	libSDL_name equ $ - strtab
+db	'libSDL-1.2.so', 0
+;db	'libSDL.so', 0
 	db	'SDL_Init', 0
 	db	'SDL_SetVideoMode', 0
 	db	'SDL_PollEvent', 0
@@ -543,7 +548,8 @@ db	'libSDL.so', 0
 	db	'SDL_GL_SwapBuffers', 0
 	db	'SDL_Quit', 0
 	db	0
-db	'libGL.so', 0
+	libGL_name equ $ - strtab
+db	'libGL.so.1', 0
 	db	'glViewport', 0
 	db	'glCreateShader', 0
 	db  'glShaderSource', 0
