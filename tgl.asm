@@ -506,10 +506,10 @@ shader_vtx:
 shader_frg:
 	db	'varying vec4 p;'
 	db	'void main(){'
-	db	'float c,f=p.z;'
+	db	'float c;'
 	db	'vec2 '
-	db	'v=4.*vec2(sin(-f),cos(-f)),'
-	db	'h=7.*vec2(sin(f*3.),cos(f*3.));'
+	db	'v=4.*vec2(sin(-p.z),cos(-p.z)),'
+	db	'h=7.*vec2(sin(p.z*3.),cos(p.z*3.));'
 	db	'c=sin(3.*p.x+v.x)*sin(4.*p.y+v.y)'
 	db	'+sin(7.*p.x+h.x)*sin(2.*p.y+h.y);'
 	db	'gl_FragColor='
@@ -536,7 +536,8 @@ strtab:
 ; libraries to load
 libs_to_dl:
 	libSDL_name equ $ - strtab
-db	'libSDL-1.2.so', 0
+;db 'libSDL-1.2.so', 0
+db	'libSDL-1.2.so.0', 0
 ;db	'libSDL.so', 0
 	db	'SDL_Init', 0
 	db	'SDL_SetVideoMode', 0
