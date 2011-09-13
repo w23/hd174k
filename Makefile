@@ -3,6 +3,9 @@ PROD=tgl
 # можно рассчитать
 ELF_HEADER_SIZE=346
 
+# WHAT THE FUCK, UBUNTU, WHAT THE FUCK
+ECHO_CMD=/bin/echo
+
 release: $(PROD)
 
 clean: $(PROD)
@@ -20,8 +23,8 @@ debug: $(PROD)
 	gdb $(PROD).elf
 
 $(PROD): $(PROD).gz
-	echo "T=/tmp/i;tail -n+2 \$$0|zcat>\$$T;chmod +x \$$T;\$$T;rm \$$T;exit" > $(PROD)
-	echo -ne "\x1f\x8b\x08\x001337" >> $(PROD)
+	$(ECHO_CMD) "T=/tmp/i;tail -n+2 \$$0|zcat>\$$T;chmod +x \$$T;\$$T;rm \$$T;exit" > $(PROD)
+	$(ECHO_CMD) -ne "\x1f\x8b\x08\x00YOLP" >> $(PROD)
 	tail -c +9 $(PROD).gz >> $(PROD)
 	chmod +x $(PROD)
 	wc -c $(PROD)
