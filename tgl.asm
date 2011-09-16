@@ -98,8 +98,9 @@ dd 4
 ;times (4 - (($$-$) % 4)) db 0x23
 dynamic:
 	dd 	1,	libdl_name	; DT_NEEDED
-	dd	1,	libSDL_name	; DT_NEEDED
-	dd	1,	libGL_name	; DT_NEEDED
+; these are optional, they just give nice errors when something wrong with the libraries
+;	dd	1,	libSDL_name	; DT_NEEDED
+;	dd	1,	libGL_name	; DT_NEEDED
 	dd 	4,	hash		; DT_HASH
 	dd 	5,	strtab		; DT_STRTAB
 	dd 	6,	symtab		; DT_SYMTAB
@@ -537,7 +538,7 @@ strtab:
 libs_to_dl:
 	libSDL_name equ $ - strtab
 ;db 'libSDL-1.2.so', 0
-db	'libSDL-1.2.so.0', 0
+db	'libSDL-1.2.so.0', 0	; only this full name seems to work on all tested distros
 ;db	'libSDL.so', 0
 	db	'SDL_Init', 0
 	db	'SDL_SetVideoMode', 0
@@ -551,6 +552,7 @@ db	'libSDL-1.2.so.0', 0
 	db	0
 	libGL_name equ $ - strtab
 db	'libGL.so.1', 0
+;db	'libGL.so', 0	; doesn't work for ubuntu -- loads mesa/libGL.so instead of proper driver's one
 	db	'glViewport', 0
 	db	'glCreateShader', 0
 	db  'glShaderSource', 0
